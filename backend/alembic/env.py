@@ -37,6 +37,7 @@ from models.part import Part
 from models.invoice import Invoice
 from models.user import User
 from models.work_station import WorkStation
+from models.order_part import OrderPart
 
 # add your model's MetaData object here
 # for 'autogenerate' support
