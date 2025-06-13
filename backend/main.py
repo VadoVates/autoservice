@@ -3,9 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 import uvicorn
+from pydantic import BaseModel
+from typing import Optional
 
 from models.base import get_db
 from models import Customer, Vehicle, Order
+
+class CustomerCreate(BaseModel):
+    name: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
 
 app = FastAPI(
     title="AutoService Manager API",
@@ -38,6 +46,14 @@ def read_root():
 def get_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     customers = db.query(Customer).offset(skip).limit(limit).all()
     return customers
+
+@app.post("/api/customers")
+def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
+    db_customer = Customer(**customer.dict())
+    db.add(db_customer)
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer
 
 @app.get("/api/customers/{customer_id}")
 def get_customer(customer_id: int, db: Session = Depends(get_db)):

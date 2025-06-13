@@ -23,8 +23,13 @@ export interface Order {
   vehicle_id: number;
   work_station_id?: number;
   description: string;
-  priority: 'normal' | 'high' | 'urgent';
-  status: 'new' | 'in_progress' | 'waiting_for_parts' | 'completed' | 'invoiced';
+  priority: "normal" | "high" | "urgent";
+  status:
+    | "new"
+    | "in_progress"
+    | "waiting_for_parts"
+    | "completed"
+    | "invoiced";
   created_at: string;
   started_at?: string;
   completed_at?: string;
