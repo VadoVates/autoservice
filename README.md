@@ -115,7 +115,7 @@ Stworzenie kompleksowego systemu informatycznego wspomagającego zarządzanie wa
 - **Kontrola wersji:** Git
 - **Konteneryzacja:** Docker & Docker Compose
 - **IDE:** VS Code
-- **API Testing:** Postman/Insomnia
+- **API Testing:** Postman/Insomnia / Swagger UI
 - **Linting:** ESLint (JS), Pylint (Python)
 
 ---
@@ -139,17 +139,81 @@ Stworzenie kompleksowego systemu informatycznego wspomagającego zarządzanie wa
 
 ### 4.3 Oprogramowanie wymagane do uruchomienia
 
-- **Node.js:** 18.x LTS
+- **Node.js:** 18.x LTS lub nowszy (20.x LTS zalecane)
+- **npm:** 9.x lub nowszy (instalowany z Node.js)
 - **Python:** 3.10+
 - **MySQL:** 8.0+
 - **Docker:** 20.10+ (opcjonalnie)
-- **npm/yarn:** najnowsza wersja
 
 ---
 
 ## 5. Instalacja
 
-### 5.1 Przygotowanie środowiska
+### 5.1 Instalacja wymaganych narzędzi
+
+#### Node.js i npm
+
+**Linux (Debian/Ubuntu):**
+```bash
+# Opcja 1: Z oficjalnego repozytorium NodeSource (zalecane)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Opcja 2: Przez snap
+sudo snap install node --classic
+
+# Opcja 3: Przez nvm (Node Version Manager)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install --lts
+nvm use --lts
+
+# Sprawdź instalację
+node --version  # Powinno pokazać v20.x.x
+npm --version   # Powinno pokazać 10.x.x
+```
+
+**Windows:**
+1. Pobierz instalator z https://nodejs.org/
+2. Wybierz wersję LTS (20.x)
+3. Uruchom instalator .msi
+4. Upewnij się, że zaznaczona jest opcja "Add to PATH"
+5. Zrestartuj terminal/cmd po instalacji
+
+**macOS:**
+```bash
+# Przez Homebrew
+brew install node
+
+# Lub pobierz instalator z https://nodejs.org/
+```
+
+#### Python
+
+**Linux:**
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
+
+**Windows:**
+1. Pobierz z https://www.python.org/downloads/
+2. Podczas instalacji zaznacz "Add Python to PATH"
+
+#### MySQL
+
+**Linux:**
+```bash
+sudo apt update
+sudo apt install mysql-server
+sudo mysql_secure_installation
+```
+
+**Windows:**
+1. Pobierz MySQL Installer z https://dev.mysql.com/downloads/installer/
+2. Wybierz "Developer Default" podczas instalacji
+
+### 5.2 Przygotowanie projektu
 
 #### Krok 1: Klonowanie repozytorium
 
@@ -158,121 +222,131 @@ git clone https://github.com/VadoVice/autoservice.git
 cd autoservice
 ```
 
-#### Krok 2: Instalacja MySQL
+#### Krok 2: Utworzenie bazy danych
 
 ```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install mysql-server
-sudo mysql_secure_installation
+# Zaloguj się do MySQL
+mysql -u root -p
 
-# Windows - pobierz instalator ze strony MySQL
+# W konsoli MySQL wykonaj:
 ```
-
-#### Krok 3: Utworzenie bazy danych
-
 ```sql
 CREATE DATABASE autoservice_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'autoservice_user'@'localhost' IDENTIFIED BY 'SecurePassword123!';
 GRANT ALL PRIVILEGES ON autoservice_db.* TO 'autoservice_user'@'localhost';
 FLUSH PRIVILEGES;
+exit;
 ```
 
-### 5.2 Instalacja Backend
+### 5.3 Instalacja Backend
 
-#### Krok 1: Środowisko wirtualne Python
+#### Krok 1: Przejdź do katalogu backend
 
 ```bash
 cd backend
-python3 -m venv venv
+```
 
+#### Krok 2: Utwórz i aktywuj środowisko wirtualne
+
+```bash
 # Linux/Mac
+python3 -m venv venv
 source venv/bin/activate
 
 # Windows
+python -m venv venv
 venv\Scripts\activate
 ```
 
-#### Krok 2: Instalacja zależności
+#### Krok 3: Instalacja zależności
 
 ```bash
+pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### Krok 3: Konfiguracja
+#### Krok 4: Konfiguracja zmiennych środowiskowych
 
 ```bash
-# Skopiuj plik konfiguracji
-cp .env.example .env
-
-# Edytuj .env i ustaw parametry połączenia z bazą
-nano .env
-```
-
-Zawartość .env:
-
-```
-DATABASE_URL=mysql+pymysql://autoservice_user:SecurePassword123!@localhost/autoservice_db
+# Utwórz plik .env
+cp .env.example .env 2>/dev/null || echo "DATABASE_URL=mysql+pymysql://autoservice_user:SecurePassword123!@localhost/autoservice_db
 SECRET_KEY=your-secret-key-here
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+ACCESS_TOKEN_EXPIRE_MINUTES=30" > .env
+
+# Edytuj .env jeśli potrzebujesz innych ustawień
 ```
 
-#### Krok 4: Migracje bazy danych
+#### Krok 5: Wykonaj migracje bazy danych
 
 ```bash
+# Upewnij się, że venv jest aktywny
 alembic upgrade head
 ```
 
-#### Krok 5: Uruchomienie serwera
+#### Krok 6: Uruchom serwer backend
 
 ```bash
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Lub
+python main.py
 ```
 
-### 5.3 Instalacja Frontend
+Backend będzie dostępny pod adresem: http://localhost:8000
+Dokumentacja API (Swagger UI): http://localhost:8000/docs
 
-#### Krok 1: Instalacja zależności
+### 5.4 Instalacja Frontend
+
+#### Krok 1: Otwórz nowy terminal i przejdź do katalogu frontend
 
 ```bash
-cd ../frontend
-npm install
+cd frontend
 ```
 
-#### Krok 2: Konfiguracja
+#### Krok 2: Utwórz aplikację (jeśli jeszcze nie istnieje)
 
 ```bash
-# Skopiuj plik konfiguracji
-cp .env.example .env
+# Jeśli katalog frontend jest pusty:
+npx create-next-app@latest . --typescript --tailwind --app
+```
 
-# Ustaw adres API
+#### Krok 3: Instalacja dodatkowych zależności
+
+```bash
+# Podstawowe pakiety
+npm install axios react-router-dom
+npm install @mui/material @emotion/react @emotion/styled
+npm install @reduxjs/toolkit react-redux
+
+# Opcjonalne pakiety
+npm install react-hook-form yup @hookform/resolvers
+npm install chart.js react-chartjs-2
+```
+
+#### Krok 4: Konfiguracja połączenia z API
+
+```bash
+# Utwórz plik .env
 echo "REACT_APP_API_URL=http://localhost:8000" > .env
 ```
 
-#### Krok 3: Uruchomienie aplikacji
+#### Krok 5: Uruchom aplikację frontend
 
 ```bash
 npm start
 ```
 
-### 5.4 Instalacja z użyciem Docker (zalecana)
+Frontend będzie dostępny pod adresem: http://localhost:3000
 
-#### Krok 1: Zbudowanie i uruchomienie kontenerów
+### 5.5 Instalacja z użyciem Docker (opcjonalnie)
 
 ```bash
+# W głównym katalogu projektu
 docker-compose up -d --build
-```
 
-#### Krok 2: Wykonanie migracji
-
-```bash
+# Wykonaj migracje
 docker-compose exec backend alembic upgrade head
-```
-
-#### Krok 3: Utworzenie użytkownika administracyjnego
-
-```bash
-docker-compose exec backend python create_admin.py
 ```
 
 ---
@@ -281,22 +355,30 @@ docker-compose exec backend python create_admin.py
 
 ### 6.1 Pierwsze uruchomienie
 
-1. **Dostęp do aplikacji**
+1. **Backend musi być uruchomiony:**
+   ```bash
+   cd backend
+   source venv/bin/activate  # Linux/Mac
+   uvicorn main:app --reload
+   ```
 
-   - Otwórz przeglądarkę
-   - Przejdź pod adres: `http://localhost:3000`
+2. **Frontend w osobnym terminalu:**
+   ```bash
+   cd frontend
+   npm start
+   ```
 
-2. **Logowanie**
+3. **Dostęp do aplikacji:**
+   - Frontend: http://localhost:3000
+   - API: http://localhost:8000
+   - Dokumentacja API: http://localhost:8000/docs
 
-   - Login: admin@autoservice.pl
-   - Hasło: Admin123! (zmień po pierwszym logowaniu)
+### 6.2 Domyślne dane logowania
 
-3. **Konfiguracja początkowa**
-   - Uzupełnij dane warsztatu
-   - Skonfiguruj stanowiska
-   - Dodaj pracowników
+- Login: admin@autoservice.pl
+- Hasło: Admin123! (zmień po pierwszym logowaniu)
 
-### 6.2 Podstawowe procesy
+### 6.3 Podstawowe procesy
 
 #### Przyjmowanie zlecenia
 
@@ -328,83 +410,72 @@ docker-compose exec backend python create_admin.py
 3. System automatycznie pobierze dane
 4. Zweryfikuj kwoty i kliknij "Generuj PDF"
 
-### 6.3 Backup i odzyskiwanie
+---
 
-#### Automatyczny backup
+## 7. Rozwiązywanie problemów
 
+### Problem: "command not found: npm"
+**Rozwiązanie:** Node.js nie jest zainstalowany lub nie jest w PATH. Zainstaluj Node.js zgodnie z instrukcją w sekcji 5.1.
+
+### Problem: "No module named 'module_name'"
+**Rozwiązanie:** Aktywuj środowisko wirtualne Python:
 ```bash
-# Dodaj do crontab
-0 2 * * * mysqldump -u autoservice_user -p'SecurePassword123!' autoservice_db > /backup/autoservice_$(date +%Y%m%d).sql
+cd backend
+source venv/bin/activate  # Linux/Mac
+# lub
+venv\Scripts\activate  # Windows
 ```
 
-#### Przywracanie z backupu
+### Problem: Błędy CORS
+**Rozwiązanie:** Sprawdź czy backend jest uruchomiony i czy URL w frontend/.env jest poprawny.
 
+### Problem: "alembic: command not found"
+**Rozwiązanie:** Upewnij się, że venv jest aktywny i zainstaluj alembic:
 ```bash
-mysql -u autoservice_user -p autoservice_db < /backup/autoservice_20241201.sql
+pip install alembic
 ```
-
-### 6.4 Rozwiązywanie problemów
-
-**Problem:** Aplikacja nie łączy się z bazą danych
-
-- Sprawdź czy MySQL jest uruchomiony
-- Zweryfikuj dane dostępowe w pliku .env
-- Sprawdź logi: `docker-compose logs backend`
-
-**Problem:** Błędy CORS w przeglądarce
-
-- Upewnij się, że backend nasłuchuje na właściwym porcie
-- Sprawdź konfigurację CORS w backend/main.py
-
-**Problem:** Brak stylów w aplikacji
-
-- Wyczyść cache przeglądarki
-- Przebuduj frontend: `npm run build`
 
 ---
 
-## 7. Struktura projektu
+## 8. Struktura projektu
 
 ```
 autoservice/
 ├── backend/
 │   ├── alembic/              # Migracje bazy danych
-│   ├── api/                  # Endpointy API
-│   ├── core/                 # Konfiguracja, security
 │   ├── models/               # Modele SQLAlchemy
-│   ├── schemas/              # Schematy Pydantic
-│   ├── services/             # Logika biznesowa
-│   ├── tests/                # Testy jednostkowe
+│   ├── venv/                 # Środowisko wirtualne Python
 │   ├── main.py              # Punkt wejścia aplikacji
-│   └── requirements.txt      # Zależności Python
+│   ├── requirements.txt      # Zależności Python
+│   └── .env                 # Konfiguracja (nie commituj!)
 ├── frontend/
 │   ├── public/               # Pliki statyczne
 │   ├── src/
 │   │   ├── components/       # Komponenty React
 │   │   ├── pages/           # Strony aplikacji
 │   │   ├── services/        # Komunikacja z API
-│   │   ├── store/           # Redux store
-│   │   └── utils/           # Funkcje pomocnicze
-│   └── package.json         # Zależności npm
-├── docker-compose.yml       # Konfiguracja Docker
-└── README.md               # Dokumentacja
+│   │   └── App.js           # Główny komponent
+│   ├── package.json         # Zależności npm
+│   └── .env                 # Konfiguracja (nie commituj!)
+├── .gitignore               # Pliki ignorowane przez Git
+└── README.md               # Ten plik
 ```
 
 ---
 
-## 8. Dalszy rozwój
+## 9. Wsparcie i rozwój
+
+### Zgłaszanie błędów
+Utwórz issue na GitHub: https://github.com/VadoVice/autoservice/issues
 
 ### Planowane funkcjonalności
-
 - Moduł powiadomień SMS/email
 - Aplikacja mobilna dla mechaników
 - Integracja z systemami księgowymi
 - Moduł analityczny i raporty
 - Kalendarz przeglądów okresowych
-- System ocen i opinii klientów
 
-### Wsparcie techniczne
-
+### Kontakt
 - Email: support@autoservice.pl
 - Dokumentacja API: http://localhost:8000/docs
 - Repozytorium: https://github.com/VadoVice/autoservice

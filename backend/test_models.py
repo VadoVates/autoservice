@@ -41,4 +41,5 @@ except Exception as e:
     print(f"Błąd: {e}")
     db.rollback()
 finally:
+    db.commit()
     db.close()
