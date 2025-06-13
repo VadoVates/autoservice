@@ -82,16 +82,18 @@ Stworzenie kompleksowego systemu informatycznego wspomagającego zarządzanie wa
 
 ## 3. Technologie i oprogramowanie
 
-### 3.1 Frontend (JavaScript)
+### 3.1 Frontend (JavaScript/TypeScript)
 
-- **Framework:** React 18.x
-- **Zarządzanie stanem:** Redux Toolkit
-- **Routing:** React Router v6
-- **UI Framework:** Material-UI (MUI) v5
-- **Komunikacja z API:** Axios
-- **Wykresy:** Chart.js
+- **Framework:** Next.js 14.x (React 18.x)
+- **Język:** TypeScript
+- **Stylowanie:** Tailwind CSS
+- **Zarządzanie stanem:** Redux Toolkit / Zustand
+- **Routing:** Next.js App Router (wbudowany)
+- **UI Components:** shadcn/ui lub Tailwind UI
+- **Komunikacja z API:** Axios lub fetch
+- **Wykresy:** Chart.js / Recharts
 - **Formularze:** React Hook Form
-- **Walidacja:** Yup
+- **Walidacja:** Zod / Yup
 
 ### 3.2 Backend (Python)
 
@@ -304,37 +306,45 @@ Dokumentacja API (Swagger UI): http://localhost:8000/docs
 cd frontend
 ```
 
-#### Krok 2: Utwórz aplikację (jeśli jeszcze nie istnieje)
+#### Krok 2: Utwórz aplikację Next.js (jeśli jeszcze nie istnieje)
 
 ```bash
 # Jeśli katalog frontend jest pusty:
 npx create-next-app@latest . --typescript --tailwind --app
+
+# Odpowiedz na pytania:
+# ESLint? → Yes
+# src/ directory? → Yes  
+# Turbopack? → No
+# Customize import alias? → No
 ```
 
 #### Krok 3: Instalacja dodatkowych zależności
 
 ```bash
-# Podstawowe pakiety
-npm install axios react-router-dom
-npm install @mui/material @emotion/react @emotion/styled
-npm install @reduxjs/toolkit react-redux
+# Podstawowe pakiety do komunikacji z API
+npm install axios
+npm install @tanstack/react-query  # Do zarządzania stanem serwera
 
-# Opcjonalne pakiety
-npm install react-hook-form yup @hookform/resolvers
-npm install chart.js react-chartjs-2
+# Pakiety do formularzy i walidacji
+npm install react-hook-form zod @hookform/resolvers
+
+# Opcjonalne - komponenty UI
+npm install lucide-react  # Ikony
+npm install react-hot-toast  # Powiadomienia
 ```
 
 #### Krok 4: Konfiguracja połączenia z API
 
 ```bash
-# Utwórz plik .env
-echo "REACT_APP_API_URL=http://localhost:8000" > .env
+# Utwórz plik .env.local (Next.js używa .env.local zamiast .env)
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 ```
 
 #### Krok 5: Uruchom aplikację frontend
 
 ```bash
-npm start
+npm run dev
 ```
 
 Frontend będzie dostępny pod adresem: http://localhost:3000
