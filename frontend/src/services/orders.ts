@@ -32,4 +32,16 @@ export const ordersService = {
     const { data } = await api.get(`/api/customers/${customerId}/vehicles`);
     return data;
   },
+
+  createVehicle: async (vehicle: {
+    customer_id: number;
+    brand: string;
+    model: string;
+    year?: number;
+    registration_number: string;
+    vin?: string;
+  }): Promise<Vehicle> => {
+    const { data } = await api.post("/api/vehicles", vehicle);
+    return data;
+  },
 };

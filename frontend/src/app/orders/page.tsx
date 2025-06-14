@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Clock,
   CheckCircle,
+  X
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,13 +24,20 @@ const orderSchema = z.object({
   vehicle_id: z.string().min(1, "Wybierz pojazd"),
   description: z.string().min(10, "Opis musi mieć minimum 10 znaków"),
   priority: z.enum(["normal", "high", "urgent"]),
-  estimated_cost: z.preprocess(
-    (val) => (typeof val === "string" ? parseFloat(val) : val),
-    z.number().min(0)
-  ),
+  estimated_cost: z.string(),
 });
 
 type OrderFormData = z.infer<typeof orderSchema>;
+
+const vehicleSchema = z.object({
+  brand: z.string().min(1, "Podaj markę"),
+  model: z.string().min(1, "Podaj model"),
+  year: z.string().optional(),
+  registration_number: z.string().min(1, "Podaj numer rejestracyjny"),
+  vin: z.string().optional(),
+});
+
+type VehicleFormData = z.infer<typeof vehicleSchema>;
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -39,18 +47,21 @@ export default function OrdersPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [isAddingVehicle, setIsAddingVehicle] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<OrderFormData>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
       priority: "normal",
-      estimated_cost: 0,
+      estimated_cost: "0",
     },
   });
 
@@ -95,16 +106,23 @@ export default function OrdersPage() {
     }
   };
 
+  const vehicleForm = useForm<VehicleFormData>({
+    resolver: zodResolver(vehicleSchema),
+  });
+
   const onSubmit = async (data: OrderFormData) => {
     try {
       setIsSubmitting(true);
-      const newOrder = await ordersService.create({
+
+      const orderData = {
         customer_id: parseInt(data.customer_id),
         vehicle_id: parseInt(data.vehicle_id),
         description: data.description,
         priority: data.priority,
-        estimated_cost: data.estimated_cost,
-      });
+        estimated_cost: parseFloat(data.estimated_cost) || 0,
+      };
+
+      const newOrder = await ordersService.create(orderData);
 
       setOrders([newOrder, ...orders]);
       toast.success("Zlecenie zostało utworzone!");
@@ -115,6 +133,35 @@ export default function OrdersPage() {
       toast.error("Nie udało się utworzyć zlecenia");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const onSubmitVehicle = async (data: VehicleFormData) => {
+    if (!selectedCustomerId) return;
+
+    try {
+      setIsAddingVehicle(true);
+      const newVehicle = await ordersService.createVehicle({
+        customer_id: parseInt(selectedCustomerId),
+        brand: data.brand,
+        model: data.model,
+        year: data.year ? parseInt(data.year) : undefined,
+        registration_number: data.registration_number,
+        vin: data.vin,
+      });
+
+      setVehicles([...vehicles, newVehicle]);
+      setValue("vehicle_id", newVehicle.id.toString());
+      toast.success("Pojazd został dodany!");
+      setIsVehicleModalOpen(false);
+      vehicleForm.reset();
+    } catch (error: any) {
+      console.error("Błąd dodawania pojazdu:", error);
+      toast.error(
+        error.response?.data?.detail || "Nie udało się dodać pojazdu"
+      );
+    } finally {
+      setIsAddingVehicle(false);
     }
   };
 
@@ -311,9 +358,15 @@ export default function OrdersPage() {
                     disabled={!selectedCustomerId}
                   >
                     <option value="">
-                      {selectedCustomerId
-                        ? "Wybierz pojazd..."
-                        : "Najpierw wybierz klienta"}
+                      {selectedCustomerId && (
+                        <button
+                          type="button"
+                          onClick={() => setIsVehicleModalOpen(true)}
+                          className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                        >
+                          + Dodaj nowy pojazd
+                        </button>
+                      )}
                     </option>
                     {vehicles.map((vehicle) => (
                       <option key={vehicle.id} value={vehicle.id}>
@@ -389,6 +442,127 @@ export default function OrdersPage() {
                   onClick={() => {
                     setIsModalOpen(false);
                     reset();
+                  }}
+                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
+                >
+                  Anuluj
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Modal dodawania pojazdu */}
+      {isVehicleModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900">
+                Dodaj nowy pojazd
+              </h2>
+              <button
+                onClick={() => {
+                  setIsVehicleModalOpen(false);
+                  vehicleForm.reset();
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={vehicleForm.handleSubmit(onSubmitVehicle)}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Marka *
+                </label>
+                <input
+                  {...vehicleForm.register("brand")}
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="np. Toyota"
+                />
+                {vehicleForm.formState.errors.brand && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {vehicleForm.formState.errors.brand.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Model *
+                </label>
+                <input
+                  {...vehicleForm.register("model")}
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="np. Corolla"
+                />
+                {vehicleForm.formState.errors.model && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {vehicleForm.formState.errors.model.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Rok produkcji
+                </label>
+                <input
+                  {...vehicleForm.register("year")}
+                  type="number"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="np. 2020"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Numer rejestracyjny *
+                </label>
+                <input
+                  {...vehicleForm.register("registration_number")}
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="np. WA12345"
+                />
+                {vehicleForm.formState.errors.registration_number && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {vehicleForm.formState.errors.registration_number.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1">
+                  Numer VIN
+                </label>
+                <input
+                  {...vehicleForm.register("vin")}
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  placeholder="opcjonalnie"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={isAddingVehicle}
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                >
+                  {isAddingVehicle ? "Dodawanie..." : "Dodaj pojazd"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsVehicleModalOpen(false);
+                    vehicleForm.reset();
                   }}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
                 >

@@ -39,9 +39,25 @@ try:
             status="new",
             estimated_cost=500.00
         ),
+        Order(
+            customer_id=vehicles[2].customer_id if len(vehicles) > 2 else vehicles[0].customer_id,
+            vehicle_id=vehicles[2].id if len(vehicles) > 2 else vehicles[0].id,
+            description="Diagnostyka komputerowa, błąd silnika",
+            priority="normal",
+            status="waiting_for_parts",
+            work_station_id=2,
+            estimated_cost=150.00
+        ),
     ]
     
     for order in orders:
         db.add(order)
     
-    db.
+    db.commit()
+    print(f"Dodano {len(orders)} zleceń testowych")
+    
+except Exception as e:
+    print(f"Błąd: {e}")
+    db.rollback()
+finally:
+    db.close()

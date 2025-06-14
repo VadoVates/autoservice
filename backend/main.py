@@ -9,6 +9,14 @@ from typing import Optional
 from models.base import get_db
 from models import Customer, Vehicle, Order
 
+class VehicleCreate(BaseModel):
+    customer_id: int
+    brand: str
+    model: str
+    year: Optional[int] = None
+    registration_number: str
+    vin: Optional[str] = None
+
 class CustomerCreate(BaseModel):
     name: str
     phone: Optional[str] = None
@@ -159,15 +167,29 @@ def get_queue(db: Session = Depends(get_db)):
     ).all()
 
     return {
-        "station 1": station_1_orders,
-        "station 2": station_2_orders,
+        "station_1": station_1_orders,
+        "station_2": station_2_orders,
         "waiting": waiting_orders
     }
+
+### VEHICLES ###
 
 app.get("/api/customers/{customer_id}/vehicles")
 def get_customer_vehicles(customer_id: int, db: Session = Depends(get_db)):
     vehicles = db.query(Vehicle).filter(Vehicle.customer_id == customer_id).all()
     return vehicles
+
+app.post("/api/vehicles")
+def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
+    existing = db.query(Vehicle).filter(Vehicle.registration_number == vehicle.registration_number).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Vehicle with this license plate already exists")
+    
+    db_vehicle = Vehicle(**vehicle.model_dump())
+    db.add(db_vehicle)
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
 
 @app.get("/health")
 def health_check():
