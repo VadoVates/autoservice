@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Providers } from "@/components/providers";
 import "./globals.css";
 import Link from "next/link";
 import { Home, Users, Wrench, ListOrdered } from "lucide-react";
+import { Providers } from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,40 +25,42 @@ export default function RootLayout({
             <div className="flex justify-between items-center h-16">
               <Link
                 href="/"
-                className="text-2xl font-bold flex items-center gap-2"
+                className="text-xl md:text-2xl font-bold flex items-center gap-2"
               >
-                <Wrench className="h-6 w-6" />
-                AutoService Manager
+                <Wrench className="h-5 w-5 md:h-6 md:w-6" />
+                <span className="hidden sm:inline">AutoService Manager</span>
+                <span className="sm:hidden">ASM</span>
               </Link>
 
-              <div className="flex space-x-6">
+              {/* Menu mobilne */}
+              <div className="flex space-x-3 md:space-x-6 overflow-x-auto">
                 <Link
                   href="/"
-                  className="flex items-center gap-2 hover:bg-blue-700 px-3 py-2 rounded transition"
+                  className="flex items-center gap-1 md:gap-2 hover:bg-blue-700 px-2 md:px-3 py-2 rounded transition whitespace-nowrap"
                 >
                   <Home className="h-4 w-4" />
-                  Dashboard
+                  <span className="hidden md:inline">Dashboard</span>
                 </Link>
                 <Link
                   href="/customers"
-                  className="flex items-center gap-2 hover:bg-blue-700 px-3 py-2 rounded transition"
+                  className="flex items-center gap-1 md:gap-2 hover:bg-blue-700 px-2 md:px-3 py-2 rounded transition whitespace-nowrap"
                 >
                   <Users className="h-4 w-4" />
-                  Klienci
+                  <span className="text-sm md:text-base">Klienci</span>
                 </Link>
                 <Link
                   href="/orders"
-                  className="flex items-center gap-2 hover:bg-blue-700 px-3 py-2 rounded transition"
+                  className="flex items-center gap-1 md:gap-2 hover:bg-blue-700 px-2 md:px-3 py-2 rounded transition whitespace-nowrap"
                 >
                   <ListOrdered className="h-4 w-4" />
-                  Zlecenia
+                  <span className="hidden md:inline">Zlecenia</span>
                 </Link>
                 <Link
                   href="/queue"
-                  className="flex items-center gap-2 hover:bg-blue-700 px-3 py-2 rounded transition"
+                  className="flex items-center gap-1 md:gap-2 hover:bg-blue-700 px-2 md:px-3 py-2 rounded transition whitespace-nowrap"
                 >
                   <Wrench className="h-4 w-4" />
-                  Kolejka
+                  <span className="hidden md:inline">Kolejka</span>
                 </Link>
               </div>
             </div>

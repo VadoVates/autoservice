@@ -18,4 +18,16 @@ export const customersService = {
     const { data } = await api.post("/api/customers", customer);
     return data;
   },
+
+  update: async (
+    id: number,
+    customer: Omit<Customer, "id" | "created_at">
+  ): Promise<Customer> => {
+    const { data } = await api.put(`/api/customers/${id}`, customer);
+    return data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/api/customers/${id}`);
+  },
 };
