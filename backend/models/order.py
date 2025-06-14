@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Enum, ForeignKey, Float
+from sqlalchemy import Column, Integer, Text, DateTime, Enum, ForeignKey, Float
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from .base import Base
 
@@ -28,7 +28,7 @@ class Order(Base):
     priority = Column(Enum(Priority), default=Priority.NORMAL)
     status = Column(Enum(OrderStatus), default=OrderStatus.NEW)
     
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
     

@@ -15,6 +15,7 @@ export interface Vehicle {
   year?: number;
   registration_number: string;
   vin?: string;
+  owner?: Customer;
 }
 
 export interface Order {
@@ -35,4 +36,12 @@ export interface Order {
   completed_at?: string;
   estimated_cost: number;
   final_cost?: number;
+  customer?: Customer;
+  vehicle?: Vehicle;
+}
+
+export interface QueueData {
+  station_1: Order[];
+  station_2: Order[];
+  waiting: Order[];
 }
