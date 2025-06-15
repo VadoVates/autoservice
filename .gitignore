@@ -1,3 +1,31 @@
-*/.env
-backend/venv
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.Python
+env/
+venv/
+.env
+*.db
+*.sqlite
+.pytest_cache/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Project specific
+backend/.env
+backend/test_*.py
+create_db.sql
