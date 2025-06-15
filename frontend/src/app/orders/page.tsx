@@ -11,7 +11,9 @@ import {
   AlertCircle,
   Clock,
   CheckCircle,
-  X
+  X,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,6 +51,10 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isAddingVehicle, setIsAddingVehicle] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const {
     register,
@@ -122,15 +128,32 @@ export default function OrdersPage() {
         estimated_cost: parseFloat(data.estimated_cost) || 0,
       };
 
-      const newOrder = await ordersService.create(orderData);
+      if (isEditMode && editingOrder) {
+        const updatedOrder = await ordersService.update(
+          editingOrder.id,
+          orderData
+        );
+        setOrders(
+          orders.map((o) => (o.id === editingOrder.id ? updatedOrder : o))
+        );
+        toast.success("Zlecenie zostało zaktualizowane!");
+      } else {
+        const newOrder = await ordersService.create(orderData);
+        setOrders([newOrder, ...orders]);
+        toast.success("Zlecenie zostało utworzone!");
+      }
 
-      setOrders([newOrder, ...orders]);
-      toast.success("Zlecenie zostało utworzone!");
       setIsModalOpen(false);
       reset();
+      setIsEditMode(false);
+      setEditingOrder(null);
     } catch (error) {
-      console.error("Błąd tworzenia zlecenia:", error);
-      toast.error("Nie udało się utworzyć zlecenia");
+      console.error("Błąd zapisywania zlecenia:", error);
+      toast.error(
+        isEditMode
+          ? "Nie udało się zaktualizować zlecenia"
+          : "Nie udało się utworzyć zlecenia"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -209,6 +232,41 @@ export default function OrdersPage() {
         .toLowerCase()
         .includes(searchTerm.toLowerCase())
   );
+
+  const handleOpenEditModal = (order: Order) => {
+    setIsEditMode(true);
+    setEditingOrder(order);
+
+    reset({
+      customer_id: order.customer_id.toString(),
+      vehicle_id: order.vehicle_id.toString(),
+      description: order.description,
+      priority: order.priority,
+      estimated_cost: order.estimated_cost.toString(),
+    });
+
+    // Załaduj pojazdy dla klienta
+    if (order.customer_id) {
+      loadVehicles(order.customer_id);
+    }
+
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    try {
+      setIsDeleting(true);
+      await ordersService.delete(id);
+      toast.success("Zlecenie zostało usunięte");
+      setOrders(orders.filter((o) => o.id !== id));
+      setDeleteConfirmId(null);
+    } catch (error) {
+      console.error("Błąd usuwania zlecenia:", error);
+      toast.error("Nie udało się usunąć zlecenia");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
     
   return (
     <div>
@@ -263,6 +321,20 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenEditModal(order)}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Edytuj"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirmId(order.id)}
+                      className="text-blue-600 hover:text-blue-900 p-1"
+                      title="Edytuj"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadge(
                         order.priority
@@ -306,12 +378,44 @@ export default function OrdersPage() {
         </div>
       )}
 
+      {/* Dialog potwierdzenia usunięcia */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              Potwierdzenie usunięcia
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Czy na pewno chcesz usunąć to zlecenie? Tej operacji nie można
+              cofnąć.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => handleDelete(deleteConfirmId)}
+                disabled={isDeleting}
+                className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+              >
+                {isDeleting ? "Usuwanie..." : "Usuń"}
+              </button>
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
+              >
+                Anuluj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal nowego zlecenia */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6 my-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Nowe zlecenie</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                {isEditMode ? "Edytuj zlecenie" : "Nowe zlecenie"}
+              </h2>
               <button
                 onClick={() => {
                   setIsModalOpen(false);
@@ -352,29 +456,34 @@ export default function OrdersPage() {
                   <label className="block text-sm font-medium text-gray-900 mb-1">
                     Pojazd *
                   </label>
-                  <select
-                    {...register("vehicle_id")}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white disabled:bg-gray-100"
-                    disabled={!selectedCustomerId}
-                  >
-                    <option value="">
-                      {selectedCustomerId && (
-                        <button
-                          type="button"
-                          onClick={() => setIsVehicleModalOpen(true)}
-                          className="mt-2 text-sm text-blue-600 hover:text-blue-700"
-                        >
-                          + Dodaj nowy pojazd
-                        </button>
-                      )}
-                    </option>
-                    {vehicles.map((vehicle) => (
-                      <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.brand} {vehicle.model} -{" "}
-                        {vehicle.registration_number}
+                  <div>
+                    <select
+                      {...register("vehicle_id")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white disabled:bg-gray-100"
+                      disabled={!selectedCustomerId}
+                    >
+                      <option value="">
+                        {selectedCustomerId
+                          ? "Wybierz pojazd..."
+                          : "Najpierw wybierz klienta"}
                       </option>
-                    ))}
-                  </select>
+                      {vehicles.map((vehicle) => (
+                        <option key={vehicle.id} value={vehicle.id}>
+                          {vehicle.brand} {vehicle.model} -{" "}
+                          {vehicle.registration_number}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedCustomerId && (
+                      <button
+                        type="button"
+                        onClick={() => setIsVehicleModalOpen(true)}
+                        className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        + Dodaj nowy pojazd
+                      </button>
+                    )}
+                  </div>
                   {errors.vehicle_id && (
                     <p className="mt-1 text-sm text-red-600">
                       {errors.vehicle_id.message}
@@ -435,13 +544,19 @@ export default function OrdersPage() {
                   disabled={isSubmitting}
                   className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                 >
-                  {isSubmitting ? "Tworzenie..." : "Utwórz zlecenie"}
+                  {isSubmitting
+                    ? "Zapisywanie..."
+                    : isEditMode
+                    ? "Zapisz zmiany"
+                    : "Utwórz zlecenie"}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     reset();
+                    setIsEditMode(false);
+                    setEditingOrder(null);
                   }}
                   className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
                 >

@@ -223,15 +223,15 @@ export default function QueuePage() {
           Legenda priorytetów:
         </h4>
         <div className="flex gap-4 text-sm">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-900">
             <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
             <span>Normalny</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-900">
             <div className="w-4 h-4 border-2 border-orange-500 bg-orange-50 rounded"></div>
             <span>Wysoki</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-gray-900">
             <div className="w-4 h-4 border-2 border-red-500 bg-red-50 rounded"></div>
             <span>Pilny</span>
           </div>

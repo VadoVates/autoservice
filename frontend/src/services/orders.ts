@@ -18,9 +18,22 @@ export const ordersService = {
     return data;
   },
 
-  update: async (id: number, updates: Partial<Order>): Promise<Order> => {
-    const { data } = await api.put(`/api/orders/${id}`, updates);
+  update: async (
+    id: number,
+    order: {
+      customer_id: number;
+      vehicle_id: number;
+      description: string;
+      priority: string;
+      estimated_cost: number;
+    }
+  ): Promise<Order> => {
+    const { data } = await api.put(`/api/orders/${id}`, order);
     return data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/api/orders/${id}`);
   },
 
   getQueue: async (): Promise<QueueData> => {
