@@ -489,11 +489,18 @@ Utwórz issue na GitHub: https://github.com/VadoVice/autoservice/issues
 - Walidacja roku produkcji przy dodawaniu auta
 - (może) Walidacja numeru rejestracyjnego (jeżeli istnieje baza i warunku?)
 - Naprawienie funkcjonalności Kolejki
+- Lista (może edytowalna?) marek pojazdów
+- Możliwe, że i lista modeli (też edytowalna), może jakaś wyszukiwarka wersji/serii/pojemność silnika i typ (elektryk, benzyna, diesiel, hybryda, inne?)
+- Sprawdzić czy jest możliwa walidacja numeru VIN?
+- Sprawdzić czy jest możliwość pobrania historii pojazdu na podstawie VIN-u z Ministerstwa
 
 ### Planowane funkcjonalności
 - Rozdzielenie klientów indywidualnych od firmowych
 - Walidacja poprawności NIP-u
 - Pobieranie z GUS danych firm po NIP-ie
+
+### Może kiedyś
+- Poprawa funkcjonowania na mobilkach
 - Moduł powiadomień SMS/email
 - Aplikacja mobilna dla mechaników
 - Integracja z systemami księgowymi
