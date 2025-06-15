@@ -478,14 +478,24 @@ autoservice/
 ### Zgłaszanie błędów
 Utwórz issue na GitHub: https://github.com/VadoVice/autoservice/issues
 
+### Kontakt
+- Email: support@autoservice.pl
+- Dokumentacja API: http://localhost:8000/docs
+- Repozytorium: https://github.com/VadoVice/autoservice
+
+## 10. Do zrobienia
+
+### Do zrobienia na pewno
+- Walidacja roku produkcji przy dodawaniu auta
+- (może) Walidacja numeru rejestracyjnego (jeżeli istnieje baza i warunku?)
+- Naprawienie funkcjonalności Kolejki
+
 ### Planowane funkcjonalności
+- Rozdzielenie klientów indywidualnych od firmowych
+- Walidacja poprawności NIP-u
+- Pobieranie z GUS danych firm po NIP-ie
 - Moduł powiadomień SMS/email
 - Aplikacja mobilna dla mechaników
 - Integracja z systemami księgowymi
 - Moduł analityczny i raporty
 - Kalendarz przeglądów okresowych
-
-### Kontakt
-- Email: support@autoservice.pl
-- Dokumentacja API: http://localhost:8000/docs
-- Repozytorium: https://github.com/VadoVice/autoservice

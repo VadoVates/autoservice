@@ -174,12 +174,64 @@ def get_queue(db: Session = Depends(get_db)):
 
 ### VEHICLES ###
 
-app.get("/api/customers/{customer_id}/vehicles")
+@app.get("/api/customers/{customer_id}/vehicles")
 def get_customer_vehicles(customer_id: int, db: Session = Depends(get_db)):
     vehicles = db.query(Vehicle).filter(Vehicle.customer_id == customer_id).all()
     return vehicles
 
-app.post("/api/vehicles")
+@app.get("/api/vehicles")
+def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    vehicles = db.query(Vehicle).join(Customer).offset(skip).limit(limit).all()
+
+    result = []
+    for vehicle in vehicles:
+        vehicle_dict = {
+            "id": vehicle.id,
+            "customer_id": vehicle.customer_id,
+            "brand": vehicle.brand,
+            "model": vehicle.model,
+            "year": vehicle.year,
+            "registration_number": vehicle.registration_number,
+            "vin": vehicle.vin,
+            "owner": {
+                "id": vehicle.owner.id,
+                "name": vehicle.owner.name,
+                "phone": vehicle.owner.phone,
+                "email": vehicle.owner.email
+            } if vehicle.owner else None
+        }
+        result.append(vehicle_dict)
+
+    return result
+
+@app.put("/api/vehicles/{vehicle_id}")
+def update_vehicle(vehicle_id: int, vehicle: VehicleCreate, db: Session = Depends(get_db)):
+    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not db_vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    for key, value in vehicle.model_dump().items():
+        setattr(db_vehicle, key, value)
+
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
+@app.delete("/api/vehicles/{vehicle_id}")
+def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not db_vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    orders_count = db.query(Order).filter(Order.vehicle_id == vehicle_id).count()
+    if orders_count > 0:
+        raise HTTPException(status_code=400, detail=f"Can't remove the vehicle, there's {orders_count} orders")
+    
+    db.delete(db_vehicle)
+    db.commit()
+    return {"message" : "Vehicle deleted succesfully"}
+
+@app.post("/api/vehicles")
 def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
     existing = db.query(Vehicle).filter(Vehicle.registration_number == vehicle.registration_number).first()
     if existing:
