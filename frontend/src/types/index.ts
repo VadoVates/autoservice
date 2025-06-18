@@ -44,4 +44,6 @@ export interface QueueData {
   station_1: Order[];
   station_2: Order[];
   waiting: Order[];
+  waiting_for_parts: Order[];
+  completed?: Order[];
 }

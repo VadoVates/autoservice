@@ -487,17 +487,22 @@ Utwórz issue na GitHub: https://github.com/VadoVice/autoservice/issues
 
 ### Do zrobienia na pewno
 - Walidacja roku produkcji przy dodawaniu auta
-- (może) Walidacja numeru rejestracyjnego (jeżeli istnieje baza i warunku?)
-- Naprawienie funkcjonalności Kolejki
-- Lista (może edytowalna?) marek pojazdów
-- Możliwe, że i lista modeli (też edytowalna), może jakaś wyszukiwarka wersji/serii/pojemność silnika i typ (elektryk, benzyna, diesiel, hybryda, inne?)
-- Sprawdzić czy jest możliwa walidacja numeru VIN?
-- Sprawdzić czy jest możliwość pobrania historii pojazdu na podstawie VIN-u z Ministerstwa
+- Oznaczyć zlecenia jako zakończone, tj. nie wiem gdzie miałbym przeciągnąć na stronie queue.
+- Jak usunę użytkownika, to gdy jego samochód jest na naprawie, zaczynają się dziać dziwne rzeczy. Powinniśmy uzależnić możliwość usunięcia usera od tego czy samochód ma aktywny "order".
+- Po utworzeniu nowego zlecenia pojawia się zlecenie, ale "Nieznany klient", a także zamiast samochodu jest "-". Poprawnie wyświetla się info o statusie "Normalny/Wysoki/Pilny" Po odświeżeniu strony jest już OK.
+- Na liście zleceń sortowanie zleceń jest od najstarszego. Powinno być: najpierw wg ważności, a potem wg najstarszego.
+- Historia wszystkich działań (może w bazie stworzyć na zasadzie akcji?) przypisana do każdego pojazdu. Przy realizacji naprawy, możliwość dodawania komentarza do auta. Tak żeby potem móc odszukać to zgłoszenie serwisowe.
+- filtrowanie zleceń po parametrach (status realizacji)
 
 ### Planowane funkcjonalności
 - Rozdzielenie klientów indywidualnych od firmowych
 - Walidacja poprawności NIP-u
 - Pobieranie z GUS danych firm po NIP-ie
+- (może) Walidacja numeru rejestracyjnego (jeżeli istnieje baza i warunku?)
+- Lista (może edytowalna?) marek pojazdów
+- Możliwe, że i lista modeli (też edytowalna), może jakaś wyszukiwarka wersji/serii/pojemność silnika i typ (elektryk, benzyna, diesiel, hybryda, inne?)
+- Sprawdzić czy jest możliwa walidacja numeru VIN?
+- Sprawdzić czy jest możliwość pobrania historii pojazdu na podstawie VIN-u z Ministerstwa lub GUS
 
 ### Może kiedyś
 - Poprawa funkcjonowania na mobilkach

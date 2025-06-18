@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Order, QueueData } from "@/types";
 import { ordersService } from "@/services/orders";
-import { Car, Clock, AlertTriangle, RefreshCw } from "lucide-react";
+import { Car, Clock, AlertTriangle, RefreshCw, Package } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function QueuePage() {
@@ -11,6 +11,7 @@ export default function QueuePage() {
     station_1: [],
     station_2: [],
     waiting: [],
+    waiting_for_parts: [],
   });
   const [loading, setLoading] = useState(true);
   const [draggedOrder, setDraggedOrder] = useState<Order | null>(null);
@@ -49,25 +50,29 @@ export default function QueuePage() {
 
   const handleDrop = async (
     e: React.DragEvent,
-    targetStation: number | null
+    targetType: "station" | "waiting" | "waiting_for_parts",
+    targetStation?: number
   ) => {
     e.preventDefault();
 
     if (!draggedOrder) return;
 
     try {
-      // Aktualizuj status i stanowisko
-      const updates: any = {
-        work_station_id: targetStation,
-      };
+      const updates: any = {};
 
-      // Jeśli przypisujemy do stanowiska, zmień status na "w realizacji"
-      if (targetStation && draggedOrder.status === "new") {
-        updates.status = "in_progress";
+      if (targetType === "station" && targetStation) {
+        updates.work_station_id = targetStation;
+        if (draggedOrder.status === "new") {
+          updates.status = "in_progress";
+        }
       }
-      // Jeśli zdejmujemy ze stanowiska, zmień status na "nowe"
-      else if (!targetStation && draggedOrder.status === "in_progress") {
+      else if (targetType === "waiting") {
+        updates.work_station_id = null;
         updates.status = "new";
+      }
+      else if (targetType === "waiting_for_parts") {
+        updates.work_station_id = null;
+        updates.status = "waiting_for_parts";
       }
 
       await ordersService.update(draggedOrder.id, updates);
@@ -118,9 +123,17 @@ export default function QueuePage() {
 
       <p className="text-sm text-gray-700 line-clamp-2">{order.description}</p>
 
-      <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-        <Clock className="h-3 w-3" />
-        <span>{new Date(order.created_at).toLocaleString("pl-PL")}</span>
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <Clock className="h-3 w-3" />
+          <span>{new Date(order.created_at).toLocaleString("pl-PL")}</span>
+        </div>
+        {order.status === "waiting_for_parts" && (
+          <div className="flex items-center gap-1 text-xs text-yellow-600">
+            <Package className="h-3 w-3" />
+            <span>Części</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -150,7 +163,7 @@ export default function QueuePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Stanowisko 1 */}
         <div className="bg-gray-50 rounded-lg p-4">
           <h3 className="font-semibold text-lg mb-4 text-center bg-blue-600 text-white py-2 rounded">
@@ -158,7 +171,7 @@ export default function QueuePage() {
           </h3>
           <div
             onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, 1)}
+            onDrop={(e) => handleDrop(e, "station", 1)}
             className="min-h-[400px] space-y-3"
           >
             {queueData.station_1.length === 0 ? (
@@ -180,7 +193,7 @@ export default function QueuePage() {
           </h3>
           <div
             onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, 2)}
+            onDrop={(e) => handleDrop(e, "station", 2)}
             className="min-h-[400px] space-y-3"
           >
             {queueData.station_2.length === 0 ? (
@@ -202,7 +215,7 @@ export default function QueuePage() {
           </h3>
           <div
             onDragOver={handleDragOver}
-            onDrop={(e) => handleDrop(e, null)}
+            onDrop={(e) => handleDrop(e, "waiting")}
             className="min-h-[400px] space-y-3 overflow-y-auto"
           >
             {queueData.waiting.length === 0 ? (
@@ -216,10 +229,46 @@ export default function QueuePage() {
             )}
           </div>
         </div>
+
+        {/* Czekające na części */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="font-semibold text-lg mb-4 text-center bg-yellow-600 text-white py-2 rounded">
+            Czekające na części ({queueData.waiting_for_parts?.length || 0})
+          </h3>
+          <div
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, "waiting_for_parts")}
+            className="min-h-[400px] space-y-3 overflow-y-auto"
+          >
+            {!queueData.waiting_for_parts ||
+            queueData.waiting_for_parts.length === 0 ? (
+              <div className="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                Przeciągnij tutaj zlecenia czekające na części
+              </div>
+            ) : (
+              queueData.waiting_for_parts.map((order) => (
+                <OrderCard key={order.id} order={order} />
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-semibold text-blue-900 mb-2">
+          Instrukcja użytkowania:
+        </h4>
+        <ul className="text-sm text-gray-700 space-y-1">
+          <li>• Przeciągnij zlecenie na stanowisko, aby rozpocząć pracę</li>
+          <li>
+            • Przeciągnij zlecenie do "Czekające na części" gdy brakuje części
+          </li>
+          <li>
+            • Przeciągnij z powrotem do "Oczekujące" aby anulować przypisanie
+          </li>
+        </ul>
+
+        <h4 className="font-semibold text-blue-900 mb-2 mt-4">
           Legenda priorytetów:
         </h4>
         <div className="flex gap-4 text-sm">

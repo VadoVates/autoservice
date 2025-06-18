@@ -340,6 +340,14 @@ def get_queue(db: Session = Depends(get_db)):
         Order.created_at
     ).all()
 
+    waiting_for_parts_orders = db.query(Order).filter(
+        Order.status == "waiting_for_parts",
+        Order.work_station_id == None
+    ).order_by(
+        Order.priority.desc(),
+        Order.created_at
+    ).all()
+
     completed_orders = db.query(Order).filter(
         Order.status.in_(["completed", "invoiced"])
     ).all()
@@ -348,6 +356,7 @@ def get_queue(db: Session = Depends(get_db)):
         "station_1": station_1_orders,
         "station_2": station_2_orders,
         "waiting": waiting_orders,
+        "waiting_for_parts": waiting_for_parts_orders,
         "completed": completed_orders
     }
 
@@ -355,7 +364,7 @@ def get_queue(db: Session = Depends(get_db)):
 
 @app.get("/api/vehicles")
 def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    vehicles = db.query(Vehicle).join(Customer).offset(skip).limit(limit).all()
+    vehicles = db.query(Vehicle).outerjoin(Customer).offset(skip).limit(limit).all()
 
     result = []
     for vehicle in vehicles:
