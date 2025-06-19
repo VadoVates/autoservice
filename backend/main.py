@@ -54,6 +54,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def count_active_orders(db: Session = Depends(get_db)):
+    return db.query(Order).filter(
+        Order.status.in_(["new", "in_progress", "waiting_for_parts"])
+    ).count
+
 @app.get("/")
 def read_root():
     return {
@@ -73,9 +78,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     total_vehicles = db.query(Vehicle).count()
     total_orders = db.query(Order).count()
 
-    active_orders = db.query(Order).filter(
-        Order.status.in_(["new", "in_progress", "waiting_for_parts"])
-    ).count()
+    active_orders = count_active_orders(db)
 
     orders_in_queue = db.query(Order).filter(
         Order.status == "new",
@@ -199,6 +202,22 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
     if db_customer is None:
         raise HTTPException(status_code=404, detail="Customer not found")
+    
+    active_orders = count_active_orders(db)
+
+    if active_orders > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Can't remove customer - it has {active_orders} active orders"
+        )
+    
+    vehicles_count = db.query(Vehicle).filter(Vehicle.customer_id == customer_id).count()
+
+    if vehicles_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Can't remove customer - it has {vehicles_count} vehicles"
+        )
     
     db.delete(db_customer)
     db.commit()

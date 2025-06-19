@@ -50,7 +50,7 @@ export default function QueuePage() {
 
   const handleDrop = async (
     e: React.DragEvent,
-    targetType: "station" | "waiting" | "waiting_for_parts",
+    targetType: "station" | "waiting" | "waiting_for_parts" | "completed",
     targetStation?: number
   ) => {
     e.preventDefault();
@@ -73,6 +73,10 @@ export default function QueuePage() {
       else if (targetType === "waiting_for_parts") {
         updates.work_station_id = null;
         updates.status = "waiting_for_parts";
+      }
+      else if (targetType === "completed") {
+        updates.work_station_id = null;
+        updates.status = "completed";
       }
 
       await ordersService.update(draggedOrder.id, updates);
@@ -254,6 +258,65 @@ export default function QueuePage() {
         </div>
       </div>
 
+      {/* Sekcja zakończonych */}
+      <div className="mt-6 bg-green-50 rounded-lg p-4">
+        <h3 className="font-semibold text-lg mb-4 text-center bg-green-600 text-white py-2 rounded">
+          Zakończone - przeciągnij tutaj po ukończeniu naprawy
+        </h3>
+        <div
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, "completed")}
+          className="min-h-[150px] border-2 border-dashed border-green-300 rounded-lg p-4"
+        >
+          {!queueData.completed || queueData.completed.length === 0 ? (
+            <div className="text-center text-gray-400 py-8">
+              <div className="mb-2">
+                <svg
+                  className="w-12 h-12 mx-auto text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              Przeciągnij tutaj zakończone zlecenia
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              {queueData.completed.map((order) => (
+                <div
+                  key={order.id}
+                  className="p-3 bg-white rounded-lg border-2 border-green-300"
+                >
+                  <div className="font-semibold text-sm text-gray-900 mb-1">
+                    {order.customer?.name}
+                  </div>
+                  <div className="text-xs text-gray-600 flex items-center gap-1">
+                    <Car className="h-3 w-3" />
+                    {order.vehicle?.registration_number}
+                  </div>
+                  <div className="text-xs text-green-600 mt-1">
+                    Zakończone{" "}
+                    {order.completed_at
+                      ? new Date(order.completed_at).toLocaleString("pl-PL")
+                      : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mt-2 text-sm text-gray-600 text-center">
+          Uwaga: Zakończonym zleceniom należy wystawić fakturę na stronie "<a href="/orders">Zlecenia</a>"
+        </div>
+      </div>
+
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-semibold text-blue-900 mb-2">
           Instrukcja użytkowania:
@@ -266,6 +329,7 @@ export default function QueuePage() {
           <li>
             • Przeciągnij z powrotem do "Oczekujące" aby anulować przypisanie
           </li>
+          <li>• Przeciągnij do sekcji "Zakończone" po ukończeniu naprawy</li>
         </ul>
 
         <h4 className="font-semibold text-blue-900 mb-2 mt-4">
