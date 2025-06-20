@@ -15,7 +15,16 @@ const vehicleSchema = z.object({
   customer_id: z.string().min(1, "Wybierz właściciela"),
   brand: z.string().min(2, "Marka musi mieć minimum 2 znaki"),
   model: z.string().min(1, "Model jest wymagany"),
-  year: z.string().optional(),
+  year: z.string()
+    .optional()
+    .refine((val) => {
+      if (!val) return true;
+      const year = parseInt(val);
+      const currentYear = new Date().getFullYear();
+      return year >= 1900 && year <= currentYear + 1;
+    }, {
+    message: `Rok musi być między 1900 a ${new Date().getFullYear() + 1}`
+  }),
   registration_number: z.string().min(1, "Numer rejestracyjny jest wymagany"),
   vin: z.string().optional(),
 });
