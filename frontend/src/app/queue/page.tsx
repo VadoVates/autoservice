@@ -62,7 +62,7 @@ export default function QueuePage() {
 
       if (targetType === "station" && targetStation) {
         updates.work_station_id = targetStation;
-        if (draggedOrder.status === "new") {
+        if (draggedOrder.status === "new" || draggedOrder.status == "waiting_for_parts") {
           updates.status = "in_progress";
         }
       }
