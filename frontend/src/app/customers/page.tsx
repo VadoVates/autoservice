@@ -163,9 +163,10 @@ export default function CustomersPage() {
       setCustomers(customers.filter((c) => c.id !== id));
       toast.success("Klient został usunięty");
       setDeleteConfirmId(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Błąd usuwania klienta:", error);
-      toast.error("Nie udało się usunąć klienta");
+      const errorMessage = error.response?.data?.detail || "Nie udało się usunąć klienta";
+      toast.error(errorMessage)
     } finally {
       setIsDeleting(false);
     }

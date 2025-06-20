@@ -54,10 +54,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def count_active_orders(db: Session = Depends(get_db)):
-    return db.query(Order).filter(
-        Order.status.in_(["new", "in_progress", "waiting_for_parts"])
-    ).count
+def count_active_orders(db : Session, customer_id: int = None):
+    if customer_id is None:
+        result = db.query(Order).filter(
+            Order.status.in_(["new", "in_progress", "waiting_for_parts"])
+        ).count()
+    else:
+        result = db.query(Order).filter(
+            Order.customer_id == customer_id,
+            Order.status.in_(["new", "in_progress", "waiting_for_parts"])
+        ).count()
+    return result
 
 @app.get("/")
 def read_root():
@@ -203,7 +210,7 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     if db_customer is None:
         raise HTTPException(status_code=404, detail="Customer not found")
     
-    active_orders = count_active_orders(db)
+    active_orders = count_active_orders(db, customer_id)
 
     if active_orders > 0:
         raise HTTPException(
@@ -268,7 +275,35 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     db.add(db_order)
     db.commit()
     db.refresh(db_order)
-    return db_order
+
+    db.refresh(db_order, ["customer"], ["vehicle"])
+
+    return {
+        "id": db_order.id,
+        "customer_id": db_order.customer_id,
+        "vehicle_id": db_order.vehicle_id,
+        "work_station_id": db_order.work_station_id,
+        "description": db_order.description,
+        "priority": db_order.priority,
+        "status": db_order.status,
+        "created_at": db_order.created_at,
+        "started_at": db_order.started_at,
+        "completed_at": db_order.completed_at,
+        "estimated_cost": db_order.estimated_cost,
+        "final_cost": db_order.final_cost,
+        "customer": {
+            "id": db_order.customer.id,
+            "name": db_order.customer.name,
+            "phone": db_order.customer.phone,
+            "email": db_order.customer.email
+        } if db_order.customer else None,
+        "vehicle": {
+            "id": db_order.vehicle.id,
+            "brand": db_order.vehicle.brand,
+            "model": db_order.vehicle.model,
+            "registration_number": db_order.vehicle.registration_number
+        } if db_order.vehicle else None
+    }
 
 @app.put("/api/orders/{order_id}")
 def update_order(order_id: int, order_data: dict, db: Session = Depends(get_db)):
