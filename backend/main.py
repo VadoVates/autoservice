@@ -276,7 +276,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_order)
 
-    db.refresh(db_order, ["customer"], ["vehicle"])
+    db.refresh(db_order, ["customer", "vehicle"])
 
     return {
         "id": db_order.id,

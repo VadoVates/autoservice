@@ -212,42 +212,60 @@ sudo apt install mariadb-server mariadb-client
 # Celem szybkiej konfiguracji zalecane jest uruchomienie skryptu startowego
 sudo mysql_secure_installation
 ```
+
 **Windows:**
 1. Pobierz MySQL Installer z https://dev.mysql.com/downloads/installer/
-2. Wybierz "Developer Default" podczas instalacji
+2. Wybierz "Custom" podczas instalacji
+3. Wybierz najnowsze wersje: "MySQL Servers", "MySQL Shell"
 
 ### 5.2 Przygotowanie projektu
 
-#### Krok 1: Klonowanie repozytorium
+#### Krok 1: Instalacja Gita
 
+**Linux:**
 ```bash
 sudo apt install git
+```
+
+**Windows:**
+1. Wejdź na stronę: https://git-scm.com/downloads
+2. Pobierz najnowszą wersję pod Windows
+3. Uruchom instalację
+
+#### Krok 2: Klonowanie repozytorium
+
+```bash
 git clone https://github.com/VadoVates/autoservice.git
 cd autoservice
 ```
 
-#### Krok 2: Utworzenie bazy danych
+#### Krok 3: Utworzenie bazy danych
 
+**Linux:**
 ```bash
 # Zaloguj się do MySQL - jeżeli ustawiłeś hasło roota to:
 mariadb -u root -p
 # Jeżeli hasło roota nie jest ustawione to:
 sudo mariadb
-
-# W konsoli MySQL wykonaj:
 ```
+**Windows:**
+1. Uruchom MySQL Command Line Client
+
+```shell
+# W konsoli MySQL wykonaj:
 ```sql
 CREATE DATABASE autoservice_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER 'autoservice_user'@'localhost' IDENTIFIED BY 'SecurePassword123!';
 GRANT ALL PRIVILEGES ON autoservice_db.* TO 'autoservice_user'@'localhost';
 FLUSH PRIVILEGES;
 exit;
+```
 
-# Jest też przygotowany skrypt w pliku .sql, którego można użyć:
+```shell
+# Jest też przygotowany skrypt w pliku .sql, którego można użyć, w Windowsie również należy użyć znaków "/" w ścieżce:
 ```sql
 SOURCE ścieżka_do_sklonowanego_repozytorium/autoservice/create_db.sql;
 exit;
-
 ```
 
 ### 5.3 Instalacja Backend
@@ -268,6 +286,7 @@ source venv/bin/activate
 # Windows
 python -m venv venv
 venv\Scripts\activate
+# Jeżeli skrypt nie chce się aktywować, należy zmienić politykę wykonywania skryptów w PowerShellu
 ```
 
 #### Krok 3: Instalacja zależności
@@ -283,7 +302,7 @@ pip install -r requirements.txt
 # Utwórz plik .env
 cp .env.example .env
 
-# Edytuj .env celem ustawienia danych użytkownika
+# Możesz edytować .env celem ustawienia danych użytkownika
 nano .env
 ```
 
