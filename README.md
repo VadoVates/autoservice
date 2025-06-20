@@ -158,14 +158,15 @@ Stworzenie kompleksowego systemu informatycznego wspomagającego zarządzanie wa
 **Linux (Debian/Ubuntu):**
 ```bash
 # Opcja 1: Z oficjalnego repozytorium NodeSource (zalecane)
+sudo apt install -y curl
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+sudo apt install -y nodejs npm
 
 # Opcja 2: Przez snap
 sudo snap install node --classic
 
 # Opcja 3: Przez nvm (Node Version Manager)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 source ~/.bashrc
 nvm install --lts
 nvm use --lts
@@ -207,10 +208,10 @@ sudo apt install python3 python3-pip python3-venv
 **Linux:**
 ```bash
 sudo apt update
-sudo apt install mysql-server
+sudo apt install mariadb-server mariadb-client
+# Celem szybkiej konfiguracji zalecane jest uruchomienie skryptu startowego
 sudo mysql_secure_installation
 ```
-
 **Windows:**
 1. Pobierz MySQL Installer z https://dev.mysql.com/downloads/installer/
 2. Wybierz "Developer Default" podczas instalacji
@@ -220,15 +221,18 @@ sudo mysql_secure_installation
 #### Krok 1: Klonowanie repozytorium
 
 ```bash
-git clone https://github.com/VadoVice/autoservice.git
+sudo apt install git
+git clone https://github.com/VadoVates/autoservice.git
 cd autoservice
 ```
 
 #### Krok 2: Utworzenie bazy danych
 
 ```bash
-# Zaloguj się do MySQL
-mysql -u root -p
+# Zaloguj się do MySQL - jeżeli ustawiłeś hasło roota to:
+mariadb -u root -p
+# Jeżeli hasło roota nie jest ustawione to:
+sudo mariadb
 
 # W konsoli MySQL wykonaj:
 ```
@@ -238,6 +242,12 @@ CREATE USER 'autoservice_user'@'localhost' IDENTIFIED BY 'SecurePassword123!';
 GRANT ALL PRIVILEGES ON autoservice_db.* TO 'autoservice_user'@'localhost';
 FLUSH PRIVILEGES;
 exit;
+
+# Jest też przygotowany skrypt w pliku .sql, którego można użyć:
+```sql
+SOURCE ścieżka_do_sklonowanego_repozytorium/autoservice/create_db.sql;
+exit;
+
 ```
 
 ### 5.3 Instalacja Backend
@@ -271,18 +281,16 @@ pip install -r requirements.txt
 
 ```bash
 # Utwórz plik .env
-cp .env.example .env 2>/dev/null || echo "DATABASE_URL=mysql+pymysql://autoservice_user:SecurePassword123!@localhost/autoservice_db
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30" > .env
+cp .env.example .env
 
-# Edytuj .env jeśli potrzebujesz innych ustawień
+# Edytuj .env celem ustawienia danych użytkownika
+nano .env
 ```
 
 #### Krok 5: Wykonaj migracje bazy danych
 
 ```bash
-# Upewnij się, że venv jest aktywny
+# Upewnij się, że venv jest aktywny: świadczy o tym napis `(venv)` na początku linii
 alembic upgrade head
 ```
 
@@ -303,23 +311,10 @@ Dokumentacja API (Swagger UI): http://localhost:8000/docs
 #### Krok 1: Otwórz nowy terminal i przejdź do katalogu frontend
 
 ```bash
-cd frontend
+cd autoservice/frontend
 ```
 
-#### Krok 2: Utwórz aplikację Next.js (jeśli jeszcze nie istnieje)
-
-```bash
-# Jeśli katalog frontend jest pusty:
-npx create-next-app@latest . --typescript --tailwind --app
-
-# Odpowiedz na pytania:
-# ESLint? → Yes
-# src/ directory? → Yes  
-# Turbopack? → No
-# Customize import alias? → No
-```
-
-#### Krok 3: Instalacja dodatkowych zależności
+#### Krok 2: Instalacja dodatkowych zależności
 
 ```bash
 # Podstawowe pakiety do komunikacji z API
@@ -334,14 +329,14 @@ npm install lucide-react  # Ikony
 npm install react-hot-toast  # Powiadomienia
 ```
 
-#### Krok 4: Konfiguracja połączenia z API
+#### Krok 3: Konfiguracja połączenia z API
 
 ```bash
 # Utwórz plik .env.local (Next.js używa .env.local zamiast .env)
 echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 ```
 
-#### Krok 5: Uruchom aplikację frontend
+#### Krok 4: Uruchom aplikację frontend
 
 ```bash
 npm run dev
@@ -476,12 +471,12 @@ autoservice/
 ## 9. Wsparcie i rozwój
 
 ### Zgłaszanie błędów
-Utwórz issue na GitHub: https://github.com/VadoVice/autoservice/issues
+Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
 
 ### Kontakt
 - Email: support@autoservice.pl
 - Dokumentacja API: http://localhost:8000/docs
-- Repozytorium: https://github.com/VadoVice/autoservice
+- Repozytorium: https://github.com/VadoVates/autoservice
 
 ## 10. Do zrobienia
 
