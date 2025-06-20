@@ -2,10 +2,10 @@
 
 ## Strona tytułowa
 
-**Nazwa projektu:** AutoService Manager  
-**Wersja:** 1.0  
-**Data:** Grudzień 2024  
-**Autorzy:** [Marek & Filip]  
+**Nazwa projektu:** AutoService Manager
+**Wersja:** 1.0
+**Data:** Czerwiec 2025
+**Autorzy:** [Marek & Filip]
 **Typ projektu:** Aplikacja webowa
 
 ---
@@ -464,25 +464,47 @@ pip install alembic
 ## 8. Struktura projektu
 
 ```
-autoservice/
+autoservice/                           # Główny katalog
 ├── backend/
-│   ├── alembic/              # Migracje bazy danych
-│   ├── models/               # Modele SQLAlchemy
-│   ├── venv/                 # Środowisko wirtualne Python
-│   ├── main.py              # Punkt wejścia aplikacji
-│   ├── requirements.txt      # Zależności Python
-│   └── .env                 # Konfiguracja (nie commituj!)
+│   ├── alembic/                       # Migracje bazy danych
+│   ├── models/                        # Modele SQLAlchemy
+│   ├── main.py                        # Punkt wejścia backendu
+│   ├── requirements.txt               # Zależności Python
+│   ├── .env.example                   # Przykładowy plik konfiguracji
+│   ├── add_test_data.py               # Dane testowe do dodania do bazy
+│   ├── add_test_orders.py             # Testowe zamówienia
+│   └── alembic.ini                    # Konfiguracja Alembica
 ├── frontend/
-│   ├── public/               # Pliki statyczne
+│   ├── public/                        # Pliki statyczne
 │   ├── src/
-│   │   ├── components/       # Komponenty React
-│   │   ├── pages/           # Strony aplikacji
-│   │   ├── services/        # Komunikacja z API
-│   │   └── App.js           # Główny komponent
-│   ├── package.json         # Zależności npm
-│   └── .env                 # Konfiguracja (nie commituj!)
-├── .gitignore               # Pliki ignorowane przez Git
-└── README.md               # Ten plik
+│   │   ├── app/                       # Strony frontendu
+│   │   │   ├── customers/page.tsx     # Widok strony "Klienci"
+│   │   │   ├── orders/page.tsx        # Widok strony "Zamówienia"
+│   │   │   ├── queue/page.tsx         # Widok strony "Kolejka"
+│   │   │   ├── vehicles/page.tsx      # Widok strony "Pojazdy"
+│   │   │   ├── default_page_Next.tsx  # Domyślna strona startowa
+│   │   │   ├── favicon.ico            # Ikona strony
+│   │   │   ├── globals.css            # Globalne style CSS dla całej aplikacji
+│   │   │   ├── layout.tsx             # Główny layout – struktura strony, nagłówki, stopki
+│   │   │   └── page.tsx               # Domyślna strona główna aplikacji ("/")
+│   │   ├── components/providers.tsx   # Komponenty React
+│   │   ├── services/                  # Komunikacja z API
+│   │   │   ├── customers.ts           # Zapytania HTTP związane z klientami
+│   │   │   ├── dashboard.ts           # Zapytania dla dashboardu / panelu głównego
+│   │   │   ├── orders.ts              # Zapytania dotyczące zamówień
+│   │   │   └── vehicles.ts            # Zapytania dotyczące pojazdów
+│   │   └── types/index.js             # Definicje typów i interfejsów TypeScript dla danych aplikacji    
+│   ├── package.json                   # Główna konfiguracja projektu frontendowego              
+│   ├── .gitignore                     # Ignorowane pliki/foldery w repozytorium frontendu
+│   ├── eslint.config.mjs              # Konfiguracja ESLint
+│   ├── next.config.ts                 # Konfiguracja Next.js
+│   ├── package-lock.json              # Dokładne wersje zależności
+│   ├── postcss.config.mjs             # Konfiguracja PostCSS
+│   ├── tsconfig.json                  # Konfiguracja kompilatora TypeScript
+│   └── .env                           # Konfiguracja 
+├── create_db.sql                      # Skrypt generujący bazę danych
+├── .gitignore                         # Pliki ignorowane przez Git
+└── README.md                          # Dokumentacja
 ```
 
 ---
@@ -501,7 +523,6 @@ Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
 
 ### Do zrobienia na pewno
 - Do sprawdzenia czy działa checkbox z wyświetlaniem zakończonych zleceń jak już dodamy funkcję fakturowania.
-- Do aktualizacji lista endpointów wyświetlana w backendzie pod localhost:8000
 - Zmieniłem uwagę w queue na: Uwaga: Zakończonym zleceniom należy wystawić fakturę na stronie "<a href="/orders">Zlecenia</a>" Teraz na stronie "Zlecenia" należy dodać możliwość wystawienia dokumentu sprzedaży albo po prostu zamykającego dokumentu z systemu (np. zakładamy, że system ERP nie jest podłączony do naszego systemu, więc tylko wystawiamy dokument końcowy, z którym klient może podejść do kasy). Po wystawieniu dokumentu końcowego, należy zmienić status na "Zafakturowane", a także podliczyć do puli dzisiejszych zarobionych pieniędzy kwotę za zakończone zlecenie.
 - Drag & Drop trochę działa w taki "sloppy" sposób
 
@@ -515,6 +536,7 @@ Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
 - Możliwe, że i lista modeli (też edytowalna), może jakaś wyszukiwarka wersji/serii/pojemność silnika i typ (elektryk, benzyna, diesiel, hybryda, inne?)
 - Sprawdzić czy jest możliwa walidacja numeru VIN?
 - Sprawdzić czy jest możliwość pobrania historii pojazdu na podstawie VIN-u z Ministerstwa lub GUS
+- Konteneryzacja aplikacji celem umieszczenia na serwerze
 
 ### Może kiedyś
 - Poprawa funkcjonowania na mobilkach
