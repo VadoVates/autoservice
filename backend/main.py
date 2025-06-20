@@ -72,9 +72,46 @@ def read_root():
         "message": "Witaj w AutoService Manager API",
         "version": "1.0.0",
         "endpoints": {
-            "customers": "/api/customers",
-            "vehicles": "/api/vehicles",
-            "orders": "/api/orders"
+            # Dashboard
+            "dashboard": {
+                "stats": "/api/dashboard/stats"
+            },
+            
+            # Klienci
+            "customers": {
+                "list": "/api/customers",
+                "get": "/api/customers/{customer_id}",
+                "create": "POST /api/customers",
+                "update": "PUT /api/customers/{customer_id}",
+                "delete": "DELETE /api/customers/{customer_id}",
+                "vehicles": "/api/customers/{customer_id}/vehicles"
+            },
+            
+            # Pojazdy
+            "vehicles": {
+                "list": "/api/vehicles",
+                "create": "POST /api/vehicles",
+                "update": "PUT /api/vehicles/{vehicle_id}",
+                "delete": "DELETE /api/vehicles/{vehicle_id}"
+            },
+            
+            # Zlecenia
+            "orders": {
+                "list": "/api/orders?status={status}",
+                "create": "POST /api/orders",
+                "update": "PUT /api/orders/{order_id}",
+                "delete": "DELETE /api/orders/{order_id}"
+            },
+            
+            # Kolejka
+            "queue": "/api/queue",
+            
+            # Dokumentacja
+            "documentation": "/docs",
+            "openapi": "/openapi.json",
+            
+            # Status
+            "health": "/health"
         }
     }
 
@@ -229,6 +266,72 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
     db.delete(db_customer)
     db.commit()
     return {"message" : "Customer deleted succesfully"}
+
+### VEHICLES SECTION ###
+
+@app.get("/api/vehicles")
+def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    vehicles = db.query(Vehicle).outerjoin(Customer).offset(skip).limit(limit).all()
+
+    result = []
+    for vehicle in vehicles:
+        vehicle_dict = {
+            "id": vehicle.id,
+            "customer_id": vehicle.customer_id,
+            "brand": vehicle.brand,
+            "model": vehicle.model,
+            "year": vehicle.year,
+            "registration_number": vehicle.registration_number,
+            "vin": vehicle.vin,
+            "owner": {
+                "id": vehicle.owner.id,
+                "name": vehicle.owner.name,
+                "phone": vehicle.owner.phone,
+                "email": vehicle.owner.email
+            } if vehicle.owner else None
+        }
+        result.append(vehicle_dict)
+
+    return result
+
+@app.post("/api/vehicles")
+def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
+    existing = db.query(Vehicle).filter(Vehicle.registration_number == vehicle.registration_number).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Vehicle with this license plate already exists")
+    
+    db_vehicle = Vehicle(**vehicle.model_dump())
+    db.add(db_vehicle)
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
+@app.put("/api/vehicles/{vehicle_id}")
+def update_vehicle(vehicle_id: int, vehicle: VehicleCreate, db: Session = Depends(get_db)):
+    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not db_vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    for key, value in vehicle.model_dump().items():
+        setattr(db_vehicle, key, value)
+
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
+@app.delete("/api/vehicles/{vehicle_id}")
+def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
+    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
+    if not db_vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    
+    orders_count = db.query(Order).filter(Order.vehicle_id == vehicle_id).count()
+    if orders_count > 0:
+        raise HTTPException(status_code=400, detail=f"Can't remove the vehicle, there's {orders_count} orders")
+    
+    db.delete(db_vehicle)
+    db.commit()
+    return {"message" : "Vehicle deleted succesfully"}
 
 ### ORDER SECTION ###
 
@@ -421,72 +524,6 @@ def get_queue(db: Session = Depends(get_db)):
         "waiting_for_parts": waiting_for_parts_orders,
         "completed": completed_orders
     }
-
-### VEHICLES ###
-
-@app.get("/api/vehicles")
-def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    vehicles = db.query(Vehicle).outerjoin(Customer).offset(skip).limit(limit).all()
-
-    result = []
-    for vehicle in vehicles:
-        vehicle_dict = {
-            "id": vehicle.id,
-            "customer_id": vehicle.customer_id,
-            "brand": vehicle.brand,
-            "model": vehicle.model,
-            "year": vehicle.year,
-            "registration_number": vehicle.registration_number,
-            "vin": vehicle.vin,
-            "owner": {
-                "id": vehicle.owner.id,
-                "name": vehicle.owner.name,
-                "phone": vehicle.owner.phone,
-                "email": vehicle.owner.email
-            } if vehicle.owner else None
-        }
-        result.append(vehicle_dict)
-
-    return result
-
-@app.post("/api/vehicles")
-def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
-    existing = db.query(Vehicle).filter(Vehicle.registration_number == vehicle.registration_number).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Vehicle with this license plate already exists")
-    
-    db_vehicle = Vehicle(**vehicle.model_dump())
-    db.add(db_vehicle)
-    db.commit()
-    db.refresh(db_vehicle)
-    return db_vehicle
-
-@app.put("/api/vehicles/{vehicle_id}")
-def update_vehicle(vehicle_id: int, vehicle: VehicleCreate, db: Session = Depends(get_db)):
-    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
-    if not db_vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-    
-    for key, value in vehicle.model_dump().items():
-        setattr(db_vehicle, key, value)
-
-    db.commit()
-    db.refresh(db_vehicle)
-    return db_vehicle
-
-@app.delete("/api/vehicles/{vehicle_id}")
-def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
-    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
-    if not db_vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-    
-    orders_count = db.query(Order).filter(Order.vehicle_id == vehicle_id).count()
-    if orders_count > 0:
-        raise HTTPException(status_code=400, detail=f"Can't remove the vehicle, there's {orders_count} orders")
-    
-    db.delete(db_vehicle)
-    db.commit()
-    return {"message" : "Vehicle deleted succesfully"}
 
 @app.get("/health")
 def health_check():
