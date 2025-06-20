@@ -55,6 +55,8 @@ export default function OrdersPage() {
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [showInvoiced, setShowInvoiced] = useState(false);
 
   const {
     register,
@@ -75,7 +77,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
     if (selectedCustomerId) {
@@ -89,7 +91,7 @@ export default function OrdersPage() {
     try {
       setLoading(true);
       const [ordersData, customersData] = await Promise.all([
-        ordersService.getAll(),
+        ordersService.getAll(statusFilter || undefined),
         customersService.getAll(),
       ]);
       setOrders(ordersData);
@@ -225,13 +227,18 @@ export default function OrdersPage() {
   };
 
   const filteredOrders = orders.filter(
-    (order) =>
-      order.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.vehicle?.registration_number
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-  );
+    (order) => {
+      const matchesSearch =
+        order.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.customer?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.vehicle?.registration_number
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      
+      const matchesInvoiced = showInvoiced || order.status !== "invoiced";
+
+      return matchesSearch && matchesInvoiced;
+    });
 
   const handleOpenEditModal = (order: Order) => {
     setIsEditMode(true);
@@ -281,19 +288,45 @@ export default function OrdersPage() {
         </button>
       </div>
 
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+      <div className="mb-6 space-y-4">
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="Szukaj zlecenia..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder:text-gray-400"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+          >
+            <option value="">Wszystkie statusy</option>
+            <option value="new">Nowe</option>
+            <option value="in_progress">W realizacji</option>
+            <option value="waiting_for_parts">Oczekuje na części</option>
+            <option value="completed">Zakończone</option>
+            <option value="invoiced">Zafakturowane</option>
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
           <input
-            type="text"
-            placeholder="Szukaj zlecenia..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white placeholder:text-gray-400"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            type="checkbox"
+            id="showInvoiced"
+            checked={showInvoiced}
+            onChange={(e) => setShowInvoiced(e.target.checked)}
+            className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
           />
+          <label htmlFor="showInvoiced" className="text-sm text-gray-700">
+            Pokaż zafakturowane zlecenia
+          </label>
         </div>
       </div>
-
       {loading ? (
         <div className="text-center py-8">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

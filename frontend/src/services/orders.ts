@@ -2,8 +2,9 @@ import { api } from "@/lib/api";
 import { Order, Vehicle, QueueData } from "@/types";
 
 export const ordersService = {
-  getAll: async (): Promise<Order[]> => {
-    const { data } = await api.get("/api/orders");
+  getAll: async (status?: string): Promise<Order[]> => {
+    const params = status ? { status } : {};
+    const { data } = await api.get("/api/orders", { params });
     return data;
   },
 
