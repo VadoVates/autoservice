@@ -233,8 +233,16 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
 ### ORDER SECTION ###
 
 @app.get("/api/orders")
-def get_orders(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    orders = db.query(Order).offset(skip).limit(limit).all()
+def get_orders(skip: int = 0, limit: int = 100, status: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(Order)
+
+    if status:
+        query = query.filter(Order.status == status)
+
+    orders = query.order_by(
+        Order.priority.desc(),
+        Order.created_at.asc()
+    ).offset(skip).limit(limit).all()
     
     # Dodaj dane klienta i pojazdu
     result = []
