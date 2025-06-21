@@ -350,6 +350,7 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 #### Krok 4: Uruchom aplikację frontend
 
 ```bash
+npm install
 npm run dev
 ```
 
