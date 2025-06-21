@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -49,6 +50,19 @@ def get_recent_orders(db: Session) -> dict:
 
 @router.get("/stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+
+    first_day_of_the_month = today.replace(day=1)
+    month_now = first_day_of_the_month.month
+    year_now = first_day_of_the_month.year
+
+    first_day_of_the_next_month = (
+        first_day_of_the_month.replace(month=month_now + 1
+        ) if month_now < 12 else
+        first_day_of_the_month.replace(month = 1, year = year_now+1)
+    )
+
     total_customers = db.query(Customer).count()
     total_vehicles = db.query(Vehicle).count()
     total_orders = db.query(Order).count()
@@ -62,7 +76,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     
     completed_today = db.query(Order).filter(
         Order.status == "completed",
-        func.date(Order.completed_at) == func.date(func.now())
+        Order.completed_at >= today,
+        Order.completed_at < tomorrow
     ).count()
 
     station_1_busy = db.query(Order).filter(
@@ -77,13 +92,14 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
     revenue_today = db.query(func.sum(Order.final_cost)).filter(
         Order.status == "invoiced",
-        func.date(Order.completed_at) == func.date(func.now())
+        Order.completed_at >= today,
+        Order.completed_at < tomorrow
     ).scalar() or 0
     
     revenue_month = db.query(func.sum(Order.final_cost)).filter(
         Order.status == "invoiced",
-        func.extract('year', Order.completed_at) == func.extract('year', func.now()),
-        func.extract('month', Order.completed_at) == func.extract('month', func.now())
+    Order.completed_at >= first_day_of_the_month,
+    Order.completed_at < first_day_of_the_next_month
     ).scalar() or 0
 
     return {

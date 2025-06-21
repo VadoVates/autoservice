@@ -38,7 +38,7 @@ def get_queue(db: Session = Depends(get_db)):
     ).all()
 
     completed_orders = db.query(Order).filter(
-        Order.status.in_(["completed", "invoiced"])
+        Order.status.in_(["completed"])
     ).all()
     
     return {

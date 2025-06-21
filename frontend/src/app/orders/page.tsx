@@ -14,6 +14,7 @@ import {
   X,
   Pencil,
   Trash2,
+  FileText
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -274,6 +275,36 @@ export default function OrdersPage() {
       setIsDeleting(false);
     }
   };
+
+  const handleInvoice = async (order: Order) => {
+    if (order.status !== "completed") {
+      toast.error("Można wystawić dokument tylko dla zakończonych zleceń");
+      return;
+    }
+
+    try {
+      toast.loading("Generowanie dokumentu...");
+      const blob = await ordersService.createInvoice(order.id);
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `zlecenie_${order.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss();
+      toast.success("Dokument został wygenerowany");
+
+      await loadData();
+    } catch (error) {
+      toast.dismiss();
+      console.error("Błąd generowania dokumentu: ", error);
+      toast.error("Nie udało się wygenerować dokumentu");
+    }
+  };
     
   return (
     <div>
@@ -354,19 +385,29 @@ export default function OrdersPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    {order.status === "completed" && (
+                      <button
+                        onClick={() => handleInvoice(order)}
+                        className="text-green-600 hover:text-green-900"
+                        title="Wystaw dokument"
+                      >
+                        <FileText className="h-5 w-5" />
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleOpenEditModal(order)}
-                      className="text-blue-600 hover:text-blue-900 p-1"
-                      title="Edytuj"
+                      onClick={() => {
+                        setEditingOrder(order);
+                        setIsModalOpen(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-900"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setDeleteConfirmId(order.id)}
-                      className="text-blue-600 hover:text-blue-900 p-1"
-                      title="Edytuj"
+                      className="text-red-600 hover:text-red-900"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-5 w-5" />
                     </button>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadge(

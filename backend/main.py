@@ -1,9 +1,6 @@
-from datetime import datetime, timezone
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 import uvicorn
-from typing import Optional
 from api.routes.customers import router as customers_router
 from api.routes.dashboard import router as dashboard_router
 from api.routes.vehicles import router as vehicles_router
@@ -11,12 +8,30 @@ from api.routes.orders import router as orders_router
 from api.routes.queue import router as queue_router
 
 from models.base import get_db
-from models import Customer, Vehicle, Order
 
 app = FastAPI(
     title="AutoService Manager API",
     version="2.0.0"
 )
+
+"""
+DEBUG
+"""
+"""
+
+from fastapi.exceptions import RequestValidationError
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    print("Validation error:", exc.errors())
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
+    
+"""
 
 # Konfiguracja CORS
 app.add_middleware(

@@ -1,12 +1,21 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date, timedelta
 from typing import Optional
+from fastapi.responses import StreamingResponse
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from api.models import OrderCreate, OrderUpdate
 from api.utils import get_object_or_404, serialize_order
-from models.order import Order
+from models.order import Order, OrderStatus
 from models.base import get_db
+
+import io
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import cm
 
 
 router = APIRouter(
@@ -27,7 +36,154 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
 
 @router.post("/{order_id}/invoice")
 def create_invoice(order_id: int, db: Session = Depends(get_db)):
-    return
+    order = get_object_or_404(db, Order, order_id, "Order")
+
+    print("Order status:", order.status)
+
+    if order.status != OrderStatus.COMPLETED:
+        raise HTTPException(
+            status_code=400,
+            detail="Only completed orders can be invoiced"
+        )
+    
+    if not order.final_cost:
+        order.final_cost = order.estimated_cost or 0.0
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1f2137'),
+        spaceAfter=30,
+        alignment=1 # center!
+    )
+
+    # NAGŁÓWEK
+    elements.append(Paragraph("PROTOKÓŁ NAPRAWY", title_style))
+    elements.append(Spacer(1, 20))
+
+    # Info o dokumencie
+    doc_info = [
+        ['Numer zlecenia', f'#{order.id}'],
+        ['Data wystawienia:', datetime.now().strftime("%Y-%m-%d %H:%M")],
+        ['Status', 'Zakończone']
+    ]
+
+    doc_table = Table(doc_info, colWidths=[5*cm, 10*cm])
+    doc_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(doc_table)
+    elements.append(Spacer(1, 20))
+
+    # Dane klienta
+    elements.append(Paragraph("DANE KLIENTA", styles['Heading2']))
+    client_data = [
+        ['Imię i nazwisko:', order.customer.name if order.customer else 'Brak danych'],
+        ['Telefon:', order.customer.phone if order.customer else '-'],
+        ['Email:', order.customer.email if order.customer else '-'],
+    ]
+    
+    client_table = Table(client_data, colWidths=[5*cm, 10*cm])
+    client_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(client_table)
+    elements.append(Spacer(1, 20))
+    
+    # Dane pojazdu
+    elements.append(Paragraph("DANE POJAZDU", styles['Heading2']))
+    vehicle_data = [
+        ['Marka:', order.vehicle.brand if order.vehicle else '-'],
+        ['Model:', order.vehicle.model if order.vehicle else '-'],
+        ['Rok produkcji:', str(order.vehicle.year) if order.vehicle and order.vehicle.year else '-'],
+        ['Nr rejestracyjny:', order.vehicle.registration_number if order.vehicle else '-'],
+        ['VIN:', order.vehicle.vin if order.vehicle and order.vehicle.vin else '-'],
+    ]
+    
+    vehicle_table = Table(vehicle_data, colWidths=[5*cm, 10*cm])
+    vehicle_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(vehicle_table)
+    elements.append(Spacer(1, 20))
+    
+    # Opis naprawy
+    elements.append(Paragraph("TREŚĆ ZLECENIA", styles['Heading2']))
+    elements.append(Paragraph(order.description, styles['Normal']))
+    elements.append(Spacer(1, 30))
+    
+    # Podsumowanie kosztów
+    elements.append(Paragraph("PODSUMOWANIE", styles['Heading2']))
+    cost_data = [
+        ['', 'Kwota'],
+        ['Koszt naprawy:', f'{order.final_cost:.2f} PLN'],
+        ['', ''],
+        ['DO ZAPŁATY:', f'{order.final_cost:.2f} PLN'],
+    ]
+    
+    cost_table = Table(cost_data, colWidths=[10*cm, 5*cm])
+    cost_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 14),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(cost_table)
+    
+    # Stopka
+    elements.append(Spacer(1, 40))
+    footer_text = "Dokument wygenerowany automatycznie przez system AutoService Manager"
+    elements.append(Paragraph(footer_text, ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey,
+        alignment=1
+    )))
+    
+    # Generuj PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    order.status = "invoiced"
+
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    daily_revenue = db.query(func.sum(Order.final_cost)).filter(
+        Order.completed_at >= today,
+        Order.completed_at < tomorrow,
+        Order.status == "invoiced"
+    ).scalar() or 0
+    
+    db.commit()
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=zlecenie_{order_id}.pdf"
+        }
+    )
     
 @router.get("")
 def get_orders(skip: int = 0, limit: int = 100, status: Optional[str] = None, db: Session = Depends(get_db)):
