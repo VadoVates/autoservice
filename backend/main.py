@@ -44,14 +44,14 @@ class OrderUpdate(BaseModel):
     description: Optional[str] = None
     priority: Optional[str] = None
     status: Optional[str] = None
-    work_station_id: Optional[str] = None
+    work_station_id: Optional[int] = None
     estimated_cost: Optional[str] = None
     final_cost: Optional[str] = None
 
 app = FastAPI(
     title="AutoService Manager API",
     description="System zarządzania warsztatem samochodowym",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # Konfiguracja CORS
