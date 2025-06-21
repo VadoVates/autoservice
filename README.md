@@ -474,7 +474,6 @@ autoservice/                           # Główny katalog
 │   │   │   ├── orders/page.tsx        # Widok strony "Zamówienia"
 │   │   │   ├── queue/page.tsx         # Widok strony "Kolejka"
 │   │   │   ├── vehicles/page.tsx      # Widok strony "Pojazdy"
-│   │   │   ├── default_page_Next.tsx  # Domyślna strona startowa
 │   │   │   ├── favicon.ico            # Ikona strony
 │   │   │   ├── globals.css            # Globalne style CSS dla całej aplikacji
 │   │   │   ├── layout.tsx             # Główny layout – struktura strony, nagłówki, stopki
