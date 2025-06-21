@@ -54,7 +54,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def count_active_orders(db : Session, customer_id: int = None):
+def count_active_orders(db : Session, customer_id: Optional[int] = None):
     if customer_id is None:
         result = db.query(Order).filter(
             Order.status.in_(["new", "in_progress", "waiting_for_parts"])

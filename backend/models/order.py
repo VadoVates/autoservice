@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, Text, DateTime, Enum, ForeignKey, Float
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import Text, DateTime, ForeignKey, Float, Enum as SQLEnum
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime, timezone
 import enum
 from .base import Base
@@ -19,21 +20,21 @@ class OrderStatus(enum.Enum):
 class Order(Base):
     __tablename__ = "orders"
 
-    id = Column(Integer, primary_key=True, index=True)
-    customer_id = Column(Integer, ForeignKey("customers.id"))
-    vehicle_id = Column(Integer, ForeignKey("vehicles.id"))
-    work_station_id = Column(Integer, ForeignKey("work_stations.id"), nullable=True)
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("customers.id"))
+    vehicle_id: Mapped[int] = mapped_column(ForeignKey("vehicles.id"))
+    work_station_id: Mapped[Optional[int]] = mapped_column(ForeignKey("work_stations.id"), nullable=True)
     
-    description = Column(Text, nullable=False)
-    priority = Column(Enum(Priority), default=Priority.NORMAL)
-    status = Column(Enum(OrderStatus), default=OrderStatus.NEW)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    priority: Mapped[Priority] = mapped_column(SQLEnum(Priority), default=Priority.NORMAL)
+    status: Mapped[OrderStatus] = mapped_column(SQLEnum(OrderStatus), default=OrderStatus.NEW)
     
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    started_at = Column(DateTime, nullable=True)
-    completed_at = Column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
-    estimated_cost = Column(Float, default=0.0)
-    final_cost = Column(Float, nullable=True)
+    estimated_cost: Mapped[float] = mapped_column(Float, default=0.0)
+    final_cost: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     
     customer = relationship("Customer", back_populates="orders")
     vehicle = relationship("Vehicle", back_populates="orders")
