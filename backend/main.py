@@ -209,6 +209,14 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
 ### CUSTOMERS SECTION ###
 
+@app.post("/api/customers")
+def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
+    db_customer = Customer(**customer.dict())
+    db.add(db_customer)
+    db.commit()
+    db.refresh(db_customer)
+    return db_customer
+
 @app.get("/api/customers")
 def get_customers(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     customers = db.query(Customer).offset(skip).limit(limit).all()
@@ -225,14 +233,6 @@ def get_customer(customer_id: int, db: Session = Depends(get_db)):
     if customer is None:
         raise HTTPException(status_code=404, detail="Customer not found")
     return customer
-
-@app.post("/api/customers")
-def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
-    db_customer = Customer(**customer.dict())
-    db.add(db_customer)
-    db.commit()
-    db.refresh(db_customer)
-    return db_customer
 
 @app.put("/api/customers/{customer_id}")
 def update_customer(customer_id: int, customer: CustomerCreate, db: Session = Depends(get_db)):
@@ -275,6 +275,18 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
 
 ### VEHICLES SECTION ###
 
+@app.post("/api/vehicles")
+def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
+    existing = db.query(Vehicle).filter(Vehicle.registration_number == vehicle.registration_number).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Vehicle with this license plate already exists")
+    
+    db_vehicle = Vehicle(**vehicle.model_dump())
+    db.add(db_vehicle)
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
 @app.get("/api/vehicles")
 def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     vehicles = db.query(Vehicle).outerjoin(Customer).offset(skip).limit(limit).all()
@@ -299,18 +311,6 @@ def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
         result.append(vehicle_dict)
 
     return result
-
-@app.post("/api/vehicles")
-def create_vehicle(vehicle: VehicleCreate, db: Session = Depends(get_db)):
-    existing = db.query(Vehicle).filter(Vehicle.registration_number == vehicle.registration_number).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Vehicle with this license plate already exists")
-    
-    db_vehicle = Vehicle(**vehicle.model_dump())
-    db.add(db_vehicle)
-    db.commit()
-    db.refresh(db_vehicle)
-    return db_vehicle
 
 @app.put("/api/vehicles/{vehicle_id}")
 def update_vehicle(vehicle_id: int, vehicle: VehicleCreate, db: Session = Depends(get_db)):
@@ -341,6 +341,46 @@ def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
 
 ### ORDER SECTION ###
 
+@app.post("/api/orders")
+def create_order(order: OrderCreate, db: Session = Depends(get_db)):
+    db_order = Order(**order.model_dump())
+    db.add(db_order)
+    db.commit()
+    db.refresh(db_order)
+
+    db.refresh(db_order, ["customer", "vehicle"])
+
+    return {
+        "id": db_order.id,
+        "customer_id": db_order.customer_id,
+        "vehicle_id": db_order.vehicle_id,
+        "work_station_id": db_order.work_station_id,
+        "description": db_order.description,
+        "priority": db_order.priority,
+        "status": db_order.status,
+        "created_at": db_order.created_at,
+        "started_at": db_order.started_at,
+        "completed_at": db_order.completed_at,
+        "estimated_cost": db_order.estimated_cost,
+        "final_cost": db_order.final_cost,
+        "customer": {
+            "id": db_order.customer.id,
+            "name": db_order.customer.name,
+            "phone": db_order.customer.phone,
+            "email": db_order.customer.email
+        } if db_order.customer else None,
+        "vehicle": {
+            "id": db_order.vehicle.id,
+            "brand": db_order.vehicle.brand,
+            "model": db_order.vehicle.model,
+            "registration_number": db_order.vehicle.registration_number
+        } if db_order.vehicle else None
+    }
+
+@app.post("/api/orders/{order_id}/invoice")
+def create_invoice(order_id: int, db: Session = Depends(get_db)):
+    return
+    
 @app.get("/api/orders")
 def get_orders(skip: int = 0, limit: int = 100, status: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(Order)
@@ -385,42 +425,6 @@ def get_orders(skip: int = 0, limit: int = 100, status: Optional[str] = None, db
         result.append(order_dict)
     
     return result
-
-@app.post("/api/orders")
-def create_order(order: OrderCreate, db: Session = Depends(get_db)):
-    db_order = Order(**order.model_dump())
-    db.add(db_order)
-    db.commit()
-    db.refresh(db_order)
-
-    db.refresh(db_order, ["customer", "vehicle"])
-
-    return {
-        "id": db_order.id,
-        "customer_id": db_order.customer_id,
-        "vehicle_id": db_order.vehicle_id,
-        "work_station_id": db_order.work_station_id,
-        "description": db_order.description,
-        "priority": db_order.priority,
-        "status": db_order.status,
-        "created_at": db_order.created_at,
-        "started_at": db_order.started_at,
-        "completed_at": db_order.completed_at,
-        "estimated_cost": db_order.estimated_cost,
-        "final_cost": db_order.final_cost,
-        "customer": {
-            "id": db_order.customer.id,
-            "name": db_order.customer.name,
-            "phone": db_order.customer.phone,
-            "email": db_order.customer.email
-        } if db_order.customer else None,
-        "vehicle": {
-            "id": db_order.vehicle.id,
-            "brand": db_order.vehicle.brand,
-            "model": db_order.vehicle.model,
-            "registration_number": db_order.vehicle.registration_number
-        } if db_order.vehicle else None
-    }
 
 @app.put("/api/orders/{order_id}")
 def update_order(order_id: int, order_data: dict, db: Session = Depends(get_db)):
