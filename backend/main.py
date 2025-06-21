@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 from models.base import get_db
@@ -17,6 +17,12 @@ class VehicleCreate(BaseModel):
     year: Optional[int] = None
     registration_number: str
     vin: Optional[str] = None
+
+    @field_validator('year')
+    def validate_year(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and (v < 1900 or v > datetime.now().year + 1):
+            raise ValueError("Invalid year for vehicle")
+        return v
 
 class CustomerCreate(BaseModel):
     name: str
