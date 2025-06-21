@@ -10,6 +10,9 @@ from typing import Optional
 from models.base import get_db
 from models import Customer, Vehicle, Order
 
+ACTIVE_STATUSES = ["new", "in_progress", "waiting_for_parts"]
+RECENT_ORDERS = 6
+
 class VehicleCreate(BaseModel):
     customer_id: int
     brand: str
@@ -60,17 +63,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def get_object_or_404(db: Session, model, object_id: int, name: str = "Object"):
+    obj = db.query(model).filter(model.id == object_id).first()
+    if obj is None:
+        raise HTTPException(status_code=404, detail=f"{name} not found")
+    return obj
+
 def count_active_orders(db : Session, customer_id: Optional[int] = None):
     if customer_id is None:
         result = db.query(Order).filter(
-            Order.status.in_(["new", "in_progress", "waiting_for_parts"])
+            Order.status.in_(ACTIVE_STATUSES)
         ).count()
     else:
         result = db.query(Order).filter(
             Order.customer_id == customer_id,
-            Order.status.in_(["new", "in_progress", "waiting_for_parts"])
+            Order.status.in_(ACTIVE_STATUSES)
         ).count()
     return result
+
+def serialize_customer(customer: Customer) -> dict:
+    return {
+        "id": customer.id,
+        "name": customer.name,
+        "phone": customer.phone,
+        "email": customer.email
+    }
+
+def serialize_vehicle(vehicle: Vehicle, include_owner: bool = False) -> dict:
+    data = {
+            "id": vehicle.id,
+            "brand": vehicle.brand,
+            "model": vehicle.model,
+            "registration_number": vehicle.registration_number,
+            "year": vehicle.year,
+            "vin": vehicle.vin,
+            "customer_id": vehicle.customer_id,
+    }
+
+    if include_owner and vehicle.owner:
+        data["owner"] = serialize_customer(vehicle.owner)
+
+    return data
+
+def serialize_order(order: Order) -> dict:
+    return {
+            "id": order.id,
+            "customer_id": order.customer_id,
+            "vehicle_id": order.vehicle_id,
+            "work_station_id": order.work_station_id,
+            "description": order.description,
+            "priority": order.priority,
+            "status": order.status,
+            "created_at": order.created_at,
+            "started_at": order.started_at,
+            "completed_at": order.completed_at,
+            "estimated_cost": order.estimated_cost,
+            "final_cost": order.final_cost,
+            "customer": serialize_customer(order.customer) if order.customer else None,
+            "vehicle": serialize_vehicle(order.vehicle) if order.vehicle else None
+    }
 
 @app.get("/")
 def read_root():
@@ -122,6 +173,39 @@ def read_root():
     }
 
 ### DASHBOARD SECTION ###
+def get_priority_stats(db: Session) -> dict:
+    stats = {
+        "normal" : 0,
+        "high" : 0,
+        "urgent" : 0
+    }
+
+    orders_by_priority = db.query(
+        Order.priority,
+        func.count(Order.id).label('count')
+    ).filter(
+        Order.status.in_(ACTIVE_STATUSES)
+    ).group_by(Order.priority).all()
+
+    for priority, count in orders_by_priority:
+        stats[priority] = count
+
+    return stats
+
+def get_recent_orders(db: Session) -> dict:
+    recent_orders = db.query(Order).order_by(Order.created_at.desc()).limit(RECENT_ORDERS).all()
+    recent_orders_data = []
+    for order in recent_orders:
+        recent_orders_data.append({
+            "id": order.id,
+            "customer_name": order.customer.name if order.customer else "Nieznany",
+            "vehicle": f"{order.vehicle.brand} {order.vehicle.model}" if order.vehicle else "Nieznany",
+            "status": order.status,
+            "priority": order.priority,
+            "created_at": order.created_at
+        })
+    return recent_orders_data
+
 @app.get("/api/dashboard/stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
     total_customers = db.query(Customer).count()
@@ -140,22 +224,6 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         func.date(Order.completed_at) == func.date(func.now())
     ).count()
 
-    orders_by_priority = db.query(
-        Order.priority,
-        func.count(Order.id).label('count')
-    ).filter(
-        Order.status.in_(["new", "in_progress", "waiting_for_parts"])
-    ).group_by(Order.priority).all()
-
-    priority_stats = {
-        "normal" : 0,
-        "high" : 0,
-        "urgent" : 0
-    }
-
-    for priority, count in orders_by_priority:
-        priority_stats[priority] = count
-
     station_1_busy = db.query(Order).filter(
         Order.work_station_id == 1,
         Order.status.in_(["in_progress", "waiting_for_parts"])
@@ -166,7 +234,6 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         Order.status.in_(["in_progress", "waiting_for_parts"])
     ).count() > 0
 
-#####################################################################
     revenue_today = db.query(func.sum(Order.final_cost)).filter(
         Order.status == "invoiced",
         func.date(Order.completed_at) == func.date(func.now())
@@ -177,19 +244,6 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         func.extract('year', Order.completed_at) == func.extract('year', func.now()),
         func.extract('month', Order.completed_at) == func.extract('month', func.now())
     ).scalar() or 0
-#####################################################################
-
-    recent_orders = db.query(Order).order_by(Order.created_at.desc()).limit(5).all()
-    recent_orders_data = []
-    for order in recent_orders:
-        recent_orders_data.append({
-            "id": order.id,
-            "customer_name": order.customer.name if order.customer else "Nieznany",
-            "vehicle": f"{order.vehicle.brand} {order.vehicle.model}" if order.vehicle else "Nieznany",
-            "status": order.status,
-            "priority": order.priority,
-            "created_at": order.created_at
-        })
 
     return {
         "total_customers": total_customers,
@@ -198,12 +252,12 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "active_orders": active_orders,
         "orders_in_queue": orders_in_queue,
         "completed_today": completed_today,
-        "priority_stats": priority_stats,
+        "priority_stats": get_priority_stats(db),
         "station_1_busy": station_1_busy,
         "station_2_busy": station_2_busy,
         "revenue_today": revenue_today,
         "revenue_month": revenue_month,
-        "recent_orders": recent_orders_data
+        "recent_orders": get_recent_orders(db)
     }
 
 
@@ -211,7 +265,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
 
 @app.post("/api/customers")
 def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
-    db_customer = Customer(**customer.dict())
+    db_customer = Customer(**customer.model_dump())
     db.add(db_customer)
     db.commit()
     db.refresh(db_customer)
@@ -229,29 +283,23 @@ def get_customer_vehicles(customer_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/customers/{customer_id}")
 def get_customer(customer_id: int, db: Session = Depends(get_db)):
-    customer = db.query(Customer).filter(Customer.id == customer_id).first()
-    if customer is None:
-        raise HTTPException(status_code=404, detail="Customer not found")
+    customer = get_object_or_404(db, Customer, customer_id, "Customer")
     return customer
 
 @app.put("/api/customers/{customer_id}")
 def update_customer(customer_id: int, customer: CustomerCreate, db: Session = Depends(get_db)):
-    db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
-    if db_customer is None:
-        raise HTTPException(status_code=404, detail="Customer not found")
+    customer = get_object_or_404(db, Customer, customer_id, "Customer")
     
     for key, value in customer.model_dump().items():
-        setattr(db_customer, key, value)
+        setattr(customer, key, value)
 
     db.commit()
-    db.refresh(db_customer)
-    return db_customer
+    db.refresh(customer)
+    return customer
 
 @app.delete("/api/customers/{customer_id}")
 def delete_customer(customer_id: int, db: Session = Depends(get_db)):
-    db_customer = db.query(Customer).filter(Customer.id == customer_id).first()
-    if db_customer is None:
-        raise HTTPException(status_code=404, detail="Customer not found")
+    customer = get_object_or_404(db, Customer, customer_id, "Customer")
     
     active_orders = count_active_orders(db, customer_id)
 
@@ -269,7 +317,7 @@ def delete_customer(customer_id: int, db: Session = Depends(get_db)):
             detail=f"Can't remove customer - it has {vehicles_count} vehicles"
         )
     
-    db.delete(db_customer)
+    db.delete(customer)
     db.commit()
     return {"message" : "Customer deleted succesfully"}
 
@@ -293,49 +341,30 @@ def get_vehicles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
     result = []
     for vehicle in vehicles:
-        vehicle_dict = {
-            "id": vehicle.id,
-            "customer_id": vehicle.customer_id,
-            "brand": vehicle.brand,
-            "model": vehicle.model,
-            "year": vehicle.year,
-            "registration_number": vehicle.registration_number,
-            "vin": vehicle.vin,
-            "owner": {
-                "id": vehicle.owner.id,
-                "name": vehicle.owner.name,
-                "phone": vehicle.owner.phone,
-                "email": vehicle.owner.email
-            } if vehicle.owner else None
-        }
-        result.append(vehicle_dict)
+        result.append(serialize_vehicle(vehicle, include_owner=True))
 
     return result
 
 @app.put("/api/vehicles/{vehicle_id}")
 def update_vehicle(vehicle_id: int, vehicle: VehicleCreate, db: Session = Depends(get_db)):
-    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
-    if not db_vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-    
+    vehicle = get_object_or_404(db, Vehicle, vehicle_id, "Vehicle")
+
     for key, value in vehicle.model_dump().items():
-        setattr(db_vehicle, key, value)
+        setattr(vehicle, key, value)
 
     db.commit()
-    db.refresh(db_vehicle)
-    return db_vehicle
+    db.refresh(vehicle)
+    return vehicle
 
 @app.delete("/api/vehicles/{vehicle_id}")
 def delete_vehicle(vehicle_id: int, db: Session = Depends(get_db)):
-    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id).first()
-    if not db_vehicle:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
-    
+    vehicle = get_object_or_404(db, Vehicle, vehicle_id, "Vehicle")
+
     orders_count = db.query(Order).filter(Order.vehicle_id == vehicle_id).count()
     if orders_count > 0:
         raise HTTPException(status_code=400, detail=f"Can't remove the vehicle, there's {orders_count} orders")
     
-    db.delete(db_vehicle)
+    db.delete(vehicle)
     db.commit()
     return {"message" : "Vehicle deleted succesfully"}
 
@@ -350,32 +379,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
 
     db.refresh(db_order, ["customer", "vehicle"])
 
-    return {
-        "id": db_order.id,
-        "customer_id": db_order.customer_id,
-        "vehicle_id": db_order.vehicle_id,
-        "work_station_id": db_order.work_station_id,
-        "description": db_order.description,
-        "priority": db_order.priority,
-        "status": db_order.status,
-        "created_at": db_order.created_at,
-        "started_at": db_order.started_at,
-        "completed_at": db_order.completed_at,
-        "estimated_cost": db_order.estimated_cost,
-        "final_cost": db_order.final_cost,
-        "customer": {
-            "id": db_order.customer.id,
-            "name": db_order.customer.name,
-            "phone": db_order.customer.phone,
-            "email": db_order.customer.email
-        } if db_order.customer else None,
-        "vehicle": {
-            "id": db_order.vehicle.id,
-            "brand": db_order.vehicle.brand,
-            "model": db_order.vehicle.model,
-            "registration_number": db_order.vehicle.registration_number
-        } if db_order.vehicle else None
-    }
+    return serialize_order(db_order)
 
 @app.post("/api/orders/{order_id}/invoice")
 def create_invoice(order_id: int, db: Session = Depends(get_db)):
@@ -396,98 +400,33 @@ def get_orders(skip: int = 0, limit: int = 100, status: Optional[str] = None, db
     # Dodaj dane klienta i pojazdu
     result = []
     for order in orders:
-        order_dict = {
-            "id": order.id,
-            "customer_id": order.customer_id,
-            "vehicle_id": order.vehicle_id,
-            "work_station_id": order.work_station_id,
-            "description": order.description,
-            "priority": order.priority,
-            "status": order.status,
-            "created_at": order.created_at,
-            "started_at": order.started_at,
-            "completed_at": order.completed_at,
-            "estimated_cost": order.estimated_cost,
-            "final_cost": order.final_cost,
-            "customer": {
-                "id": order.customer.id,
-                "name": order.customer.name,
-                "phone": order.customer.phone,
-                "email": order.customer.email
-            } if order.customer else None,
-            "vehicle": {
-                "id": order.vehicle.id,
-                "brand": order.vehicle.brand,
-                "model": order.vehicle.model,
-                "registration_number": order.vehicle.registration_number
-            } if order.vehicle else None
-        }
-        result.append(order_dict)
+        result.append(serialize_order(order))
     
     return result
 
 @app.put("/api/orders/{order_id}")
-def update_order(order_id: int, order_data: dict, db: Session = Depends(get_db)):
-    db_order = db.query(Order).filter(Order.id == order_id).first()
-    if not db_order:
-        raise HTTPException(status_code=404, detail="Order not found")
-    """
-    update_data = order.model_dump(exclude_unset=True)
+def update_order(order_id: int, order_data: OrderUpdate, db: Session = Depends(get_db)):
+    db_order = get_object_or_404(db, Order, order_id, "Order")
 
-    if "status" in update_data:
-        if update_data["status"] == "in progress" and not db_order.started_at:
-            update_data["started_at"] = datetime.now(timezone.utc)
-        elif update_data["status"] == "completed" and not db_order.completed_at:
-            update_data["completed_at"] = datetime.now(timezone.utc)
-
+    update_data = order_data.model_dump(exclude_unset=True)
+    
     for key, value in update_data.items():
-        setattr(db_order, key, value)
-    """
-
-    for key, value in order_data.items():
         if hasattr(db_order, key):
             setattr(db_order, key, value)
 
-    if "status" in order_data:
-        if order_data["status"] == "in progress" and not db_order.started_at:
-            db_order.started_at = datetime.now(timezone.utc)
-        elif order_data["status"] == "completed" and not db_order.completed_at:
-            db_order.completed_at = datetime.now(timezone.utc)
+    if update_data.get("status") == "in_progress" and not db_order.started_at:
+        db_order.started_at = datetime.now(timezone.utc)
+
+    if update_data.get("status") == "completed" and not db_order.completed_at:
+        db_order.completed_at = datetime.now(timezone.utc)
 
     db.commit()
     db.refresh(db_order)
-    return {
-        "id": db_order.id,
-        "customer_id": db_order.customer_id,
-        "vehicle_id": db_order.vehicle_id,
-        "work_station_id": db_order.work_station_id,
-        "description": db_order.description,
-        "priority": db_order.priority,
-        "status": db_order.status,
-        "created_at": db_order.created_at,
-        "started_at": db_order.started_at,
-        "completed_at": db_order.completed_at,
-        "estimated_cost": db_order.estimated_cost,
-        "final_cost": db_order.final_cost,
-        "customer": {
-            "id": db_order.customer.id,
-            "name": db_order.customer.name,
-            "phone": db_order.customer.phone,
-            "email": db_order.customer.email
-        } if db_order.customer else None,
-        "vehicle": {
-            "id": db_order.vehicle.id,
-            "brand": db_order.vehicle.brand,
-            "model": db_order.vehicle.model,
-            "registration_number": db_order.vehicle.registration_number
-        } if db_order.vehicle else None
-    }
+    return serialize_order(db_order)
 
 @app.delete("/api/orders/{order_id}")
 def delete_order(order_id: int, db: Session = Depends(get_db)):
-    db_order = db.query(Order).filter(Order.id == order_id).first()
-    if not db_order:
-        raise HTTPException(status_code=404, detail="Order not found")
+    db_order = get_object_or_404(db, Order, order_id, "Order")
     
     db.delete(db_order)
     db.commit()
