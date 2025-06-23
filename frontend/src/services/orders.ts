@@ -25,8 +25,8 @@ export const ordersService = {
     return data;
   },
 
-  createInvoice: async (id: number): Promise<Blob> => {
-    const response = await api.post(`/api/orders/${id}/invoice`, {}, {
+  createInvoice: async (id: number, invoiceData: {final_cost: number}): Promise<Blob> => {
+    const response = await api.post(`/api/orders/${id}/invoice`, invoiceData, {
       responseType: 'blob'
     });
     return response.data;

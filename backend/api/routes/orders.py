@@ -23,6 +23,13 @@ router = APIRouter(
     tags=["orders"]
 )
 
+try:
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+    pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+except:
+    pass
+
 @router.post("")
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     db_order = Order(**order.model_dump())
@@ -57,15 +64,15 @@ def create_invoice(order_id: int, db: Session = Depends(get_db)):
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
-        fontSize=24,
+        fontSize=20,
         textColor=colors.HexColor('#1f2137'),
-        spaceAfter=30,
+        spaceAfter=15,
         alignment=1 # center!
     )
 
     # NAGŁÓWEK
     elements.append(Paragraph("PROTOKÓŁ NAPRAWY", title_style))
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 10))
 
     # Info o dokumencie
     doc_info = [
@@ -80,10 +87,10 @@ def create_invoice(order_id: int, db: Session = Depends(get_db)):
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
     elements.append(doc_table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 10))
 
     # Dane klienta
     elements.append(Paragraph("DANE KLIENTA", styles['Heading2']))
@@ -98,10 +105,10 @@ def create_invoice(order_id: int, db: Session = Depends(get_db)):
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]))
     elements.append(client_table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 10))
     
     # Dane pojazdu
     elements.append(Paragraph("DANE POJAZDU", styles['Heading2']))
@@ -118,10 +125,10 @@ def create_invoice(order_id: int, db: Session = Depends(get_db)):
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
     ]))
     elements.append(vehicle_table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 10))
     
     # Opis naprawy
     elements.append(Paragraph("TREŚĆ ZLECENIA", styles['Heading2']))
@@ -146,12 +153,12 @@ def create_invoice(order_id: int, db: Session = Depends(get_db)):
         ('FONTSIZE', (0, -1), (-1, -1), 14),
         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
         ('LINEABOVE', (0, -1), (-1, -1), 1, colors.black),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
     ]))
     elements.append(cost_table)
     
     # Stopka
-    elements.append(Spacer(1, 40))
+    elements.append(Spacer(1, 20))
     footer_text = "Dokument wygenerowany automatycznie przez system AutoService Manager"
     elements.append(Paragraph(footer_text, ParagraphStyle(
         'Footer',

@@ -58,6 +58,9 @@ export default function OrdersPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showInvoiced, setShowInvoiced] = useState(false);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [invoicingOrder, setInvoicingOrder] = useState<Order | null>(null);
+  const [finalCost, setFinalCost] = useState("");
 
   const {
     register,
@@ -277,34 +280,66 @@ export default function OrdersPage() {
   };
 
   const handleInvoice = async (order: Order) => {
-    if (order.status !== "completed") {
-      toast.error("Można wystawić dokument tylko dla zakończonych zleceń");
-      return;
-    }
+  if (order.status !== "completed") {
+    toast.error("Można wystawić dokument tylko dla zakończonych zleceń");
+    return;
+  }
+  
+  // Otwórz modal z formularzem
+  setInvoicingOrder(order);
+  setFinalCost(order.final_cost?.toString() || order.estimated_cost.toString());
+  setInvoiceModalOpen(true);
+};
 
-    try {
-      toast.loading("Generowanie dokumentu...");
-      const blob = await ordersService.createInvoice(order.id);
-
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `zlecenie_${order.id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast.dismiss();
-      toast.success("Dokument został wygenerowany");
-
-      await loadData();
-    } catch (error) {
-      toast.dismiss();
-      console.error("Błąd generowania dokumentu: ", error);
+const confirmInvoice = async () => {
+  if (!invoicingOrder) return;
+  
+  const cost = parseFloat(finalCost);
+  if (isNaN(cost) || cost < 0) {
+    toast.error("Wprowadź poprawną kwotę");
+    return;
+  }
+  
+  try {
+    toast.loading("Generowanie dokumentu...");
+    const blob = await ordersService.createInvoice(invoicingOrder.id, { final_cost: cost });
+    
+    // Pobierz plik PDF
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `zlecenie_${invoicingOrder.id}_dokument.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+    toast.dismiss();
+    toast.success("Dokument został wygenerowany");
+    
+    // Zamknij modal i odśwież dane
+    setInvoiceModalOpen(false);
+    setInvoicingOrder(null);
+    await loadData();
+  } catch (error: any) {
+    toast.dismiss();
+    console.error("Błąd generowania dokumentu:", error);
+    
+    if (error.response?.data instanceof Blob) {
+      const text = await error.response.data.text();
+      try {
+        const errorData = JSON.parse(text);
+        toast.error(errorData.detail || "Nie udało się wygenerować dokumentu");
+      } catch {
+        toast.error("Nie udało się wygenerować dokumentu");
+      }
+    } else if (error.response?.data?.detail) {
+      toast.error(error.response.data.detail);
+    } else {
       toast.error("Nie udało się wygenerować dokumentu");
     }
-  };
+  }
+};
     
   return (
     <div>
@@ -762,6 +797,78 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Modal potwierdzenia faktury */}
+{invoiceModalOpen && invoicingOrder && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold text-gray-900">
+          Wystaw dokument końcowy
+        </h2>
+        <button
+          onClick={() => {
+            setInvoiceModalOpen(false);
+            setInvoicingOrder(null);
+          }}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          <X className="h-6 w-6" />
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="bg-gray-50 p-4 rounded-lg">
+          <p className="text-sm text-gray-600">
+            <strong>Klient:</strong> {invoicingOrder.customer?.name}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Pojazd:</strong> {invoicingOrder.vehicle?.brand} {invoicingOrder.vehicle?.model} - {invoicingOrder.vehicle?.registration_number}
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
+            <strong>Opis prac:</strong> {invoicingOrder.description}
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Ostateczna kwota do zapłaty (PLN) *
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={finalCost}
+            onChange={(e) => setFinalCost(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
+            placeholder="0.00"
+            autoFocus
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Szacunkowy koszt: {invoicingOrder.estimated_cost.toFixed(2)} PLN
+          </p>
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            onClick={confirmInvoice}
+            className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition"
+          >
+            Generuj dokument
+          </button>
+          <button
+            onClick={() => {
+              setInvoiceModalOpen(false);
+              setInvoicingOrder(null);
+            }}
+            className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition"
+          >
+            Anuluj
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
