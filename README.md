@@ -513,13 +513,9 @@ Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
 
 ## 10. Do zrobienia
 
-### Do zrobienia na pewno
-- Do sprawdzenia czy działa checkbox z wyświetlaniem zakończonych zleceń jak już dodamy funkcję fakturowania
-- Zmieniłem uwagę w queue na: Uwaga: Zakończonym zleceniom należy wystawić fakturę na stronie "<a href="/orders">Zlecenia</a>" Teraz na stronie "Zlecenia" należy dodać możliwość wystawienia dokumentu sprzedaży albo po prostu zamykającego dokumentu z systemu (np. zakładamy, że system ERP nie jest podłączony do naszego systemu, więc tylko wystawiamy dokument końcowy, z którym klient może podejść do kasy). Po wystawieniu dokumentu końcowego, należy zmienić status na "Zafakturowane", a także podliczyć do puli dzisiejszych zarobionych pieniędzy kwotę za zakończone zlecenie
+### Planowane funkcjonalności
 - Drag & Drop trochę działa w taki "sloppy" sposób
 - Filtrowanie przypadków Pilnych i Ważnych w liście zleceń
-
-### Planowane funkcjonalności
 - Rozdzielenie klientów indywidualnych od firmowych
 - Historia wszystkich działań (może w bazie stworzyć na zasadzie akcji?) przypisana do każdego pojazdu. Przy realizacji naprawy, możliwość dodawania komentarza do auta. Tak żeby potem móc odszukać to zgłoszenie serwisowe.
 - Walidacja poprawności NIP-u
