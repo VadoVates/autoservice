@@ -1,0 +1,62 @@
+services:
+  db:
+    image: mariadb:latest
+    container_name: autoservice_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword123
+      MYSQL_DATABASE: autoservice_db
+      MYSQL_USER: autoservice_user
+      MYSQL_PASSWORD: SecurePassword123!
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./create_db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    networks:
+      - autoservice_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: autoservice_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql+pymysql://autoservice_user:SecurePassword123!@db:3306/autoservice_db
+      SECRET_KEY: your-secret-key
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+    volumes:
+      - ./backend:/app
+      - backend_logs:/app/logs
+    networks:
+      - autoservice_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: autoservice_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://autoservice_backend:8000
+    networks:
+      - autoservice_network
+
+volumes:
+  mysql_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  autoservice_network:
+    driver: bridge
