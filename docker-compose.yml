@@ -30,10 +30,10 @@ services:
       mariadb:
         condition: service_healthy
     environment:
-      DATABASE_URL: mysql+pymysql://autoservice_user:SecurePassword123!@db:3306/autoservice_db
-      SECRET_KEY: your-super-secret-key-change-in-production
-      ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      DATABASE_URL: "mysql+pymysql://${MARIADB_USER}:${MARIADB_PASSWORD}@mariadb:3306/${MARIADB_DATABASE}"
+      SECRET_KEY: "${SECRET_KEY}"
+      ALGORITHM: "${ALGORITHM}"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "${ACCESS_TOKEN_EXPIRE_MINUTES}"
     volumes:
       - ./backend:/app
       - backend_logs:/app/logs
