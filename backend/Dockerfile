@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better caching
 COPY requirements.txt .
+RUN python3 -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -26,15 +28,10 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-RUN echo `#!/bin/bash\n \
-    echo "Waiting for database..."\n \
-    while ! nc -z db 3306; do \n \
-        sleep 1\n \
-    done\n \
-    echo "Database is ready!"\n \
-
-# Install netcat for database check
-RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/* && \
+    bash -c 'echo "Waiting for database..."; \
+             while ! nc -z db 3306; do sleep 1; done; \
+             echo "Database is ready!"'
 
 # Use gunicorn for production
 CMD ["/app/start.sh"]
