@@ -1,24 +1,21 @@
 services:
-  db:
-    image: mariadb:latest
+  mariadb:
+    image: mariadb:lts
     container_name: autoservice_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword123
-      MYSQL_DATABASE: autoservice_db
-      MYSQL_USER: autoservice_user
-      MYSQL_PASSWORD: SecurePassword123!
+      MARIADB_RANDOM_ROOT_PASSWORD: "${MARIADB_RANDOM_ROOT_PASSWORD}"
+      MARIADB_DATABASE: "${MARIADB_DATABASE}"
+      MARIADB_USER: "${MARIADB_USER}"
+      MARIADB_PASSWORD: "${MARIADB_PASSWORD}"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./create_db.sql:/docker-entrypoint-initdb.d/01-init.sql
     networks:
       - autoservice_network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p", "rootpassword123"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+    depends_on:
+      mariadb:
+        condition: service_healthy
 
   backend:
     build:
@@ -27,7 +24,7 @@ services:
     container_name: autoservice_backend
     restart: unless-stopped
     depends_on:
-      db:
+      mariadb:
         condition: service_healthy
     environment:
       DATABASE_URL: mysql+pymysql://autoservice_user:SecurePassword123!@db:3306/autoservice_db
