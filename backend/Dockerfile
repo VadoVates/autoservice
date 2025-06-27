@@ -22,7 +22,7 @@ COPY . .
 
 # Create directories for static files
 RUN mkdir -p /app/static /app/logs
-
+ENV PATH="/app/venv/bin:$PATH"
 # output of the app on the docker terminal
 ENV PYTHONUNBUFFERED=1
 
