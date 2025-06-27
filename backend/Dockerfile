@@ -28,10 +28,5 @@ ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8000
 
-RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/* && \
-    bash -c 'echo "Waiting for database..."; \
-             while ! nc -z db 3306; do sleep 1; done; \
-             echo "Database is ready!"'
-
 # Use gunicorn for production
-CMD ["/app/start.sh"]
+CMD ["guncorn", "-b", "0.0.0.0:8000", "-w", "4", "-k", "uvicorn.workers.UvicornWorkser", "main:app"]

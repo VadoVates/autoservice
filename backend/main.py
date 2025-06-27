@@ -54,45 +54,9 @@ def read_root():
         "message": "Witaj w AutoService Manager API",
         "version": "2.0.0",
         "endpoints": {
-            # Dashboard
             "dashboard": {
                 "stats": "/api/dashboard/stats"
             },
-            
-            # Klienci
-            "customers": {
-                "list": "/api/customers",
-                "get": "/api/customers/{customer_id}",
-                "create": "POST /api/customers",
-                "update": "PUT /api/customers/{customer_id}",
-                "delete": "DELETE /api/customers/{customer_id}",
-                "vehicles": "/api/customers/{customer_id}/vehicles"
-            },
-            
-            # Pojazdy
-            "vehicles": {
-                "list": "/api/vehicles",
-                "create": "POST /api/vehicles",
-                "update": "PUT /api/vehicles/{vehicle_id}",
-                "delete": "DELETE /api/vehicles/{vehicle_id}"
-            },
-            
-            # Zlecenia
-            "orders": {
-                "list": "/api/orders?status={status}",
-                "create": "POST /api/orders",
-                "update": "PUT /api/orders/{order_id}",
-                "delete": "DELETE /api/orders/{order_id}"
-            },
-            
-            # Kolejka
-            "queue": "/api/queue",
-            
-            # Dokumentacja
-            "documentation": "/docs",
-            "openapi": "/openapi.json",
-            
-            # Status
             "health": "/health"
         }
     }
