@@ -12,8 +12,6 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-RUN python3 -m venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -22,7 +20,7 @@ COPY . .
 
 # Create directories for static files
 RUN mkdir -p /app/static /app/logs
-ENV PATH="/app/venv/bin:$PATH"
+
 # output of the app on the docker terminal
 ENV PYTHONUNBUFFERED=1
 
