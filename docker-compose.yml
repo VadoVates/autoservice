@@ -13,9 +13,12 @@ services:
       - ./create_db.sql:/docker-entrypoint-initdb.d/01-init.sql
     networks:
       - autoservice_network
-    depends_on:
-      mariadb:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   backend:
     build:
