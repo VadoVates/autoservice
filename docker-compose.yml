@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   mariadb:
@@ -15,8 +15,8 @@ services:
       - ./create_db.sql:/docker-entrypoint-initdb.d/01-init.sql
     networks:
       - autoservice_network
-    ports:
-      - "3306:3306"  # Opcjonalnie dla debugowania
+#    ports:
+#      - "3306:3306"  # Opcjonalnie dla debugowania
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       start_period: 30s
@@ -66,6 +66,28 @@ services:
       NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:8000}"
     ports:
       - "3000:3000"
+    networks:
+      - autoservice_network
+
+  init:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: autoservice_init
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "mysql+pymysql://${MARIADB_USER:-autoservice_user}:${MARIADB_PASSWORD}@mariadb:3306/${MARIADB_DATABASE:-autoservice_db}"
+    command: >
+      bash -c "
+        echo 'Czekam na backend...';
+        sleep 5;
+        alembic upgrade head &&
+        python /app/add_test_data.py &&
+        python /app/add_test_orders.py
+      "
     networks:
       - autoservice_network
 
