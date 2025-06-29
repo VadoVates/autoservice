@@ -1,0 +1,17 @@
+.git
+.gitignore
+README.md
+Makefile
+docker-compose*.yml
+.env
+.env.*
+node_modules
+.next
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+.venv
+venv
+logs/
+backup_*.sql
