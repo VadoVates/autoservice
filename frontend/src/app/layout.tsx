@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { Home, Users, Wrench, Car, ListOrdered } from "lucide-react";
+import {Home, Users, Wrench, Car, ListOrdered, Package} from "lucide-react";
 import { Providers } from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -54,6 +54,13 @@ export default function RootLayout({
                 >
                   <Car className="h-4 w-4" />
                   <span className="text-sm md:text-base">Pojazdy</span>
+                </Link>
+                <Link
+                  href="/parts"
+                  className="flex items-center gap-1 md:gap-2 hover:bg-blue-700 px-2 md:px-3 py-2 rounded transition whitespace-nowrap"
+                >
+                  <Package className="h-4 w-4" />
+                  <span className="text-sm md:text-base">Części</span>
                 </Link>
                 <Link
                   href="/orders"
