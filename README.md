@@ -3,7 +3,7 @@
 ## Strona tytułowa
 
 **Nazwa projektu:** AutoService Manager
-**Wersja:** 1.0
+**Wersja:** 3.0
 **Data:** Czerwiec 2025
 **Autorzy:** [Marek & Filip]
 **Typ projektu:** Aplikacja webowa
@@ -82,322 +82,75 @@ Stworzenie kompleksowego systemu informatycznego wspomagającego zarządzanie wa
 
 ## 3. Technologie i oprogramowanie
 
-### 3.1 Frontend (JavaScript/TypeScript)
-
-- **Framework:** Next.js 14.x (React 18.x)
-- **Język:** TypeScript
-- **Stylowanie:** Tailwind CSS
-- **Zarządzanie stanem:** Redux Toolkit / Zustand
-- **Routing:** Next.js App Router (wbudowany)
-- **UI Components:** shadcn/ui lub Tailwind UI
-- **Komunikacja z API:** Axios lub fetch
-- **Wykresy:** Chart.js / Recharts
-- **Formularze:** React Hook Form
-- **Walidacja:** Zod / Yup
-
-### 3.2 Backend (Python)
-
-- **Framework:** FastAPI 0.104.x
-- **ORM:** SQLAlchemy 2.0
-- **Migracje:** Alembic
-- **Walidacja:** Pydantic
-- **Autentykacja:** JWT (PyJWT)
-- **CORS:** FastAPI middleware
-- **Generowanie PDF:** ReportLab
-- **Testy:** pytest
-
-### 3.3 Baza danych
-
-- **System:** MySQL 8.0
-- **Narzędzie administracyjne:** phpMyAdmin (opcjonalnie)
-- **Backup:** mysqldump (automatyczny co 24h)
-
-### 3.4 Narzędzia deweloperskie
-
-- **Kontrola wersji:** Git
-- **Konteneryzacja:** Docker & Docker Compose
-- **IDE:** VS Code
-- **API Testing:** Postman/Insomnia / Swagger UI
-- **Linting:** ESLint (JS), Pylint (Python)
+- **Frontend:** Next.js (React 18), TypeScript, Tailwind CSS, React Hook Form, Zod
+- **Backend:** FastAPI, SQLAlchemy 2.0, Alembic, JWT, Pydantic
+- **Baza danych:** MySQL 8.0
+- **Konteneryzacja:** Docker
 
 ---
 
-## 4. Wymagania systemowe
+## 4. Instalacja
 
-### 4.1 Serwer
+### 4.1 Wymagania
 
-- **System operacyjny:** Ubuntu 22.04 LTS / Windows Server 2019+
-- **Procesor:** min. 2 rdzenie, 2.4 GHz
-- **RAM:** min. 4 GB (zalecane 8 GB)
-- **Dysk:** min. 20 GB wolnego miejsca
-- **Sieć:** stałe łącze internetowe
-
-### 4.2 Stacja robocza (klient)
-
-- **Przeglądarka:** Chrome 90+, Firefox 88+, Edge 90+, Safari 14+
-- **Rozdzielczość:** min. 1366x768
-- **RAM:** min. 2 GB
-- **Połączenie:** dostęp do sieci lokalnej/internetu
-
-### 4.3 Oprogramowanie wymagane do uruchomienia
-
-- **Node.js:** 18.x LTS lub nowszy (20.x LTS zalecane)
-- **npm:** 9.x lub nowszy (instalowany z Node.js)
-- **Python:** 3.10+
-- **MySQL:** 8.0+
-- **Docker:** 20.10+ (opcjonalnie)
-
----
-
-## 5. Instalacja
-
-### 5.1 Instalacja wymaganych narzędzi
-
-#### Docker
-
-**Linux (Debian/Ubuntu):**
+- Należy zainstalować Dockera (nie musi być to wersja Desktop) zgodnie z instrukcjami z linka: https://docs.docker.com/get-started/get-docker/
+- Git
 ```bash
-# Opcja 1: Z oficjalnego repozytorium NodeSource (zalecane)
-sudo apt install -y curl
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs npm
-
-# Opcja 2: Przez snap
-sudo snap install node --classic
-
-# Opcja 3: Przez nvm (Node Version Manager)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-source ~/.bashrc
-nvm install --lts
-nvm use --lts
-
-# Sprawdź instalację
-node --version  # Powinno pokazać v20.x.x
-npm --version   # Powinno pokazać 10.x.x
-```
-
-**Windows:**
-1. Pobierz instalator z https://nodejs.org/
-2. Wybierz wersję LTS (20.x)
-3. Uruchom instalator .msi
-4. Upewnij się, że zaznaczona jest opcja "Add to PATH"
-5. Zrestartuj terminal/cmd po instalacji
-
-#### Python
-
-**Linux:**
-```bash
-sudo apt update
-sudo apt install python3 python3-pip python3-venv
-```
-
-**Windows:**
-1. Pobierz z https://www.python.org/downloads/
-2. Podczas instalacji zaznacz "Add Python to PATH"
-
-#### MySQL
-
-**Linux:**
-```bash
-sudo apt update
-sudo apt install mariadb-server mariadb-client
-# Celem szybkiej konfiguracji zalecane jest uruchomienie skryptu startowego
-sudo mysql_secure_installation
-```
-
-**Windows:**
-1. Pobierz MySQL Installer z https://dev.mysql.com/downloads/installer/
-2. Wybierz "Custom" podczas instalacji
-3. Wybierz najnowsze wersje: "MySQL Servers", "MySQL Shell"
-
-### 5.2 Przygotowanie projektu
-
-#### Krok 1: Instalacja Gita
-
-**Linux:**
-```bash
+# Ubuntu/Debian
 sudo apt install git
 ```
 
-**Windows:**
-1. Wejdź na stronę: https://git-scm.com/downloads
-2. Pobierz najnowszą wersję pod Windows
-3. Uruchom instalację
-
-#### Krok 2: Klonowanie repozytorium
-
 ```bash
+# Windows
+https://git-scm.com/downloads/win
+```
+- (Opcjonalnie) `make` do wygodnego zarządzania
+```bash
+# Ubuntu/Debian
+sudo apt install make
+```
+
+### 4.2 Kroki
+```bash
+# Klonowanie repozytorium
 git clone https://github.com/VadoVates/autoservice.git
 cd autoservice
-```
 
-#### Krok 3: Utworzenie bazy danych
-
-**Linux:**
-```bash
-# Zaloguj się do MySQL - jeżeli ustawiłeś hasło roota to:
-mariadb -u root -p
-# Jeżeli hasło roota nie jest ustawione to:
-sudo mariadb
-```
-**Windows:**
-1. Uruchom MySQL Command Line Client
-
-```shell
-# W konsoli MySQL wykonaj:
-```sql
-CREATE DATABASE autoservice_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'autoservice_user'@'localhost' IDENTIFIED BY 'SecurePassword123!';
-GRANT ALL PRIVILEGES ON autoservice_db.* TO 'autoservice_user'@'localhost';
-FLUSH PRIVILEGES;
-exit;
-```
-
-```shell
-# Jest też przygotowany skrypt w pliku .sql, którego można użyć, w Windowsie również należy użyć znaków "/" w ścieżce:
-```sql
-SOURCE ścieżka_do_sklonowanego_repozytorium/autoservice/create_db.sql;
-exit;
-```
-
-### 5.3 Instalacja Backend
-
-#### Krok 1: Przejdź do katalogu backend
-
-```bash
-cd backend
-```
-
-#### Krok 2: Utwórz i aktywuj środowisko wirtualne
-
-```bash
-# Linux/Mac
-python3 -m venv venv
-source venv/bin/activate
-
-# Windows
-python -m venv venv
-venv\Scripts\activate
-# Jeżeli skrypt nie chce się aktywować, należy zmienić politykę wykonywania skryptów w PowerShellu
-```
-
-#### Krok 3: Instalacja zależności
-
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-#### Krok 4: Konfiguracja zmiennych środowiskowych
-
-```bash
-# Utwórz plik .env
+# Przygotowanie pliku konfiguracyjnego
 cp .env.example .env
-
-# Możesz edytować .env celem ustawienia danych użytkownika
-nano .env
 ```
-
-#### Krok 5: Wykonaj migracje bazy danych
-
+Na tym etapie warto otworzyć plik .env (plik ukryty) aby ustawić hasła i nazwę użytkownika dla bazy danych.
 ```bash
-# Upewnij się, że venv jest aktywny: świadczy o tym napis `(venv)` na początku linii
-alembic upgrade head
+# Zbudowanie aplikacji
+make build
+# Uruchomienie aplikacji
+make up
+# Dodatkowe komendy/pomoc
+make help
 ```
 
-#### Krok 6: Uruchom serwer backend
+### 4.3 Dostęp
 
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+- Backend będzie dostępny pod adresem: http://localhost:8000
+- Dokumentacja API (Swagger UI): http://localhost:8000/docs
+- Frontend dostępny pod adresem: http://localhost:3000
 
-# Lub
-python main.py
-```
-
-Backend będzie dostępny pod adresem: http://localhost:8000
-Dokumentacja API (Swagger UI): http://localhost:8000/docs
-
-### 5.4 Instalacja Frontend
-
-#### Krok 1: Otwórz nowy terminal i przejdź do katalogu frontend
-
-```bash
-cd autoservice/frontend
-```
-
-#### Krok 2: Instalacja dodatkowych zależności
-
-```bash
-# Podstawowe pakiety do komunikacji z API
-npm install axios
-npm install @tanstack/react-query  # Do zarządzania stanem serwera
-
-# Pakiety do formularzy i walidacji
-npm install react-hook-form zod @hookform/resolvers
-
-# Opcjonalne - komponenty UI
-npm install lucide-react  # Ikony
-npm install react-hot-toast  # Powiadomienia
-```
-
-#### Krok 3: Konfiguracja połączenia z API
-
-```bash
-# Utwórz plik .env.local (Next.js używa .env.local zamiast .env)
-echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
-```
-
-#### Krok 4: Uruchom aplikację frontend
-
-```bash
-npm install
-npm run dev
-```
-
-Frontend będzie dostępny pod adresem: http://localhost:3000
-
-### 5.5 Instalacja z użyciem Docker (opcjonalnie)
-
-```bash
-# W głównym katalogu projektu
-docker-compose up -d --build
-
-# Wykonaj migracje
-docker-compose exec backend alembic upgrade head
-```
+Numery portów to wartości domyślne. Można je zmienić w pliku `.env`.
 
 ---
 
-## 6. Uruchomienie i użytkowanie
+## 5. Komendy Makefile
+Uruchomienie: `make help`
 
-### 6.1 Pierwsze uruchomienie
+Najważniejsze:
+- `make up` - start kontenerów,
+- `make down` – zatrzymanie kontenerów
+- `make shell service=backend` – wejście do kontenera backendu
+- `make migrate` – migracje Alembica
+- `make backup-db` – kopia zapasowa bazy danych
 
-1. **Backend musi być uruchomiony:**
-   ```bash
-   cd backend
-   source venv/bin/activate  # Linux/Mac
-   uvicorn main:app --reload
-   ```
-
-2. **Frontend w osobnym terminalu:**
-   ```bash
-   cd frontend
-   npm start
-   ```
-
-3. **Dostęp do aplikacji:**
-   - Frontend: http://localhost:3000
-   - API: http://localhost:8000
-   - Dokumentacja API: http://localhost:8000/docs
-
-### 6.2 Domyślne dane logowania
-
-- Login: admin@autoservice.pl
-- Hasło: Admin123! (zmień po pierwszym logowaniu)
-
-### 6.3 Podstawowe procesy
-
-#### Przyjmowanie zlecenia
+## 6. Instrukcja obsługi
+### 6.1 Przyjmowanie zlecenia
 
 1. Kliknij "Nowe zlecenie" w menu głównym
 2. Wyszukaj lub dodaj klienta
@@ -406,21 +159,21 @@ docker-compose exec backend alembic upgrade head
 5. Ustaw priorytet (normalny/wysoki/pilny)
 6. Zapisz zlecenie
 
-#### Zarządzanie kolejką
+### 6.2 Zarządzanie kolejką
 
 1. Przejdź do "Kolejka napraw"
 2. System automatycznie przydziela zlecenia do stanowisk
 3. Możesz ręcznie przeciągać zlecenia między stanowiskami
 4. Zlecenia z wysokim priorytetem są oznaczone kolorem
 
-#### Zamawianie części
+### 6.3 Zamawianie części
 
 1. W szczegółach zlecenia kliknij "Dodaj części"
 2. Wyszukaj część w katalogu
 3. Jeśli brak na stanie, system utworzy zamówienie
 4. Potwierdź zamówienie w module "Zamówienia"
 
-#### Wystawianie rachunku
+### 6.4 Wystawianie rachunku
 
 1. Po zakończeniu naprawy przejdź do zlecenia
 2. Kliknij "Wystaw rachunek"
@@ -429,91 +182,8 @@ docker-compose exec backend alembic upgrade head
 
 ---
 
-## 7. Rozwiązywanie problemów
+## 7. Planowane funkcjonalności
 
-### Problem: "command not found: npm"
-**Rozwiązanie:** Node.js nie jest zainstalowany lub nie jest w PATH. Zainstaluj Node.js zgodnie z instrukcją w sekcji 5.1.
-
-### Problem: "No module named 'module_name'"
-**Rozwiązanie:** Aktywuj środowisko wirtualne Python:
-```bash
-cd backend
-source venv/bin/activate  # Linux/Mac
-# lub
-venv\Scripts\activate  # Windows
-```
-
-### Problem: Błędy CORS
-**Rozwiązanie:** Sprawdź czy backend jest uruchomiony i czy URL w frontend/.env jest poprawny.
-
-### Problem: "alembic: command not found"
-**Rozwiązanie:** Upewnij się, że venv jest aktywny i zainstaluj alembic:
-```bash
-pip install alembic
-```
-
----
-
-## 8. Struktura projektu
-
-```
-autoservice/                           # Główny katalog
-├── backend/
-│   ├── alembic/                       # Migracje bazy danych
-│   ├── models/                        # Modele SQLAlchemy
-│   ├── main.py                        # Punkt wejścia backendu
-│   ├── requirements.txt               # Zależności Python
-│   ├── .env.example                   # Przykładowy plik konfiguracji
-│   ├── add_test_data.py               # Dane testowe do dodania do bazy
-│   ├── add_test_orders.py             # Testowe zamówienia
-│   └── alembic.ini                    # Konfiguracja Alembica
-├── frontend/
-│   ├── public/                        # Pliki statyczne
-│   ├── src/
-│   │   ├── app/                       # Strony frontendu
-│   │   │   ├── customers/page.tsx     # Widok strony "Klienci"
-│   │   │   ├── orders/page.tsx        # Widok strony "Zamówienia"
-│   │   │   ├── queue/page.tsx         # Widok strony "Kolejka"
-│   │   │   ├── vehicles/page.tsx      # Widok strony "Pojazdy"
-│   │   │   ├── favicon.ico            # Ikona strony
-│   │   │   ├── globals.css            # Globalne style CSS dla całej aplikacji
-│   │   │   ├── layout.tsx             # Główny layout – struktura strony, nagłówki, stopki
-│   │   │   └── page.tsx               # Domyślna strona główna aplikacji ("/")
-│   │   ├── components/providers.tsx   # Komponenty React
-│   │   ├── services/                  # Komunikacja z API
-│   │   │   ├── customers.ts           # Zapytania HTTP związane z klientami
-│   │   │   ├── dashboard.ts           # Zapytania dla dashboardu / panelu głównego
-│   │   │   ├── orders.ts              # Zapytania dotyczące zamówień
-│   │   │   └── vehicles.ts            # Zapytania dotyczące pojazdów
-│   │   └── types/index.js             # Definicje typów i interfejsów TypeScript dla danych aplikacji    
-│   ├── package.json                   # Główna konfiguracja projektu frontendowego              
-│   ├── .gitignore                     # Ignorowane pliki/foldery w repozytorium frontendu
-│   ├── eslint.config.mjs              # Konfiguracja ESLint
-│   ├── next.config.ts                 # Konfiguracja Next.js
-│   ├── package-lock.json              # Dokładne wersje zależności
-│   ├── postcss.config.mjs             # Konfiguracja PostCSS
-│   ├── tsconfig.json                  # Konfiguracja kompilatora TypeScript
-│   └── .env                           # Konfiguracja 
-├── create_db.sql                      # Skrypt generujący bazę danych
-├── .gitignore                         # Pliki ignorowane przez Git
-└── README.md                          # Dokumentacja
-```
-
----
-
-## 9. Wsparcie i rozwój
-
-### Zgłaszanie błędów
-Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
-
-### Kontakt
-- Email: support@autoservice.pl
-- Dokumentacja API: http://localhost:8000/docs
-- Repozytorium: https://github.com/VadoVates/autoservice
-
-## 10. Do zrobienia
-
-### Planowane funkcjonalności
 - Drag & Drop trochę działa w taki "sloppy" sposób
 - Filtrowanie przypadków Pilnych i Ważnych w liście zleceń
 - Rozdzielenie klientów indywidualnych od firmowych
@@ -523,8 +193,8 @@ Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
 - (może) Walidacja numeru rejestracyjnego (jeżeli istnieje baza i warunku?)
 - Lista (może edytowalna?) marek pojazdów
 - Możliwe, że i lista modeli (też edytowalna), może jakaś wyszukiwarka wersji/serii/pojemność silnika i typ (elektryk, benzyna, diesiel, hybryda, inne?)
-- Sprawdzić czy jest możliwa walidacja numeru VIN?
-- Sprawdzić czy jest możliwość pobrania historii pojazdu na podstawie VIN-u z Ministerstwa lub GUS
+- Sprawdzić, czy jest możliwa walidacja numeru VIN?
+- Sprawdzić, czy jest możliwość pobrania historii pojazdu na podstawie VIN-u z Ministerstwa lub GUS
 - Konteneryzacja aplikacji celem umieszczenia na serwerze
 
 ### Może kiedyś
@@ -535,3 +205,8 @@ Utwórz issue na GitHub: https://github.com/VadoVates/autoservice/issues
 - Moduł analityczny i raporty
 - Kalendarz przeglądów okresowych
 - Konfigurowalna ilość stanowisk przy starcie
+
+## 8. Kontakt i rozwój
+- Repozytorium: https://github.com/VadoVates/autoservice
+- Dokumentacja API: http://localhost:8000
+- Zgłoszenia błędów: GitHub Issues
