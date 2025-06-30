@@ -2,7 +2,6 @@ from models.base import SessionLocal
 from models.customer import Customer
 from models.vehicle import Vehicle
 from models.work_station import WorkStation
-from datetime import datetime
 
 db = SessionLocal()
 

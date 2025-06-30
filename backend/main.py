@@ -36,7 +36,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Konfiguracja CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://192.168.0.107:3000", "http://192.168.0.*:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

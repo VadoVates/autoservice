@@ -1,7 +1,6 @@
 from models.base import SessionLocal
 from models.order import Order
 from models.vehicle import Vehicle
-from datetime import datetime
 
 db = SessionLocal()
 
