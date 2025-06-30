@@ -1,6 +1,6 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import {useState, useEffect, useCallback} from "react";
 import {Order, Customer, Vehicle} from "@/types";
 import {ordersService} from "@/services/orders";
 import {customersService} from "@/services/customers";
@@ -84,19 +84,7 @@ export default function OrdersPage() {
 
     const selectedCustomerId = watch("customer_id");
 
-    useEffect(() => {
-        loadData();
-    }, [statusFilter]);
-
-    useEffect(() => {
-        if (selectedCustomerId) {
-            loadVehicles(parseInt(selectedCustomerId));
-        } else {
-            setVehicles([]);
-        }
-    }, [selectedCustomerId]);
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
             const [ordersData, customersData] = await Promise.all([
@@ -111,7 +99,23 @@ export default function OrdersPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter]);
+
+    useEffect(() => {
+        (async () => {
+            await loadData();
+        })();
+    }, [loadData]);
+
+    useEffect(() => {
+        (async () => {
+            if (selectedCustomerId) {
+                await loadVehicles(parseInt(selectedCustomerId));
+            } else {
+                setVehicles([]);
+            }
+        })();
+    }, [selectedCustomerId]);
 
     const loadVehicles = async (customerId: number) => {
         try {
@@ -254,7 +258,7 @@ export default function OrdersPage() {
             return matchesSearch && matchesInvoiced;
         });
 
-    const handleOpenEditModal = (order: Order) => {
+    const handleOpenEditModal = async (order: Order) => {
         setIsEditMode(true);
         setEditingOrder(order);
 
@@ -268,7 +272,7 @@ export default function OrdersPage() {
 
         // Załaduj pojazdy dla klienta
         if (order.customer_id) {
-            loadVehicles(order.customer_id);
+            await loadVehicles(order.customer_id);
         }
 
         setIsModalOpen(true);
@@ -301,61 +305,61 @@ export default function OrdersPage() {
         setInvoiceModalOpen(true);
     };
 
-const confirmInvoice = async () => {
-  if (!invoicingOrder) return;
+    const confirmInvoice = async () => {
+        if (!invoicingOrder) return;
 
-  const cost = parseFloat(finalCost);
-  if (isNaN(cost) || cost < 0) {
-    toast.error("Wprowadź poprawną kwotę");
-    return;
-  }
+        const cost = parseFloat(finalCost);
+        if (isNaN(cost) || cost < 0) {
+            toast.error("Wprowadź poprawną kwotę");
+            return;
+        }
 
-  try {
-    toast.loading("Generowanie dokumentu...");
-    const blob = await ordersService.createInvoice(invoicingOrder.id, {
-      final_cost: cost,
-    });
+        try {
+            toast.loading("Generowanie dokumentu...");
+            const blob = await ordersService.createInvoice(invoicingOrder.id, {
+                final_cost: cost,
+            });
 
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `zlecenie_${invoicingOrder.id}_dokument.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `zlecenie_${invoicingOrder.id}_dokument.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
 
-    toast.dismiss();
-    toast.success("Dokument został wygenerowany");
+            toast.dismiss();
+            toast.success("Dokument został wygenerowany");
 
-    setInvoiceModalOpen(false);
-    setInvoicingOrder(null);
-    await loadData();
-  } catch (error: unknown) {
-    toast.dismiss();
-    console.error("Błąd generowania dokumentu:", error);
+            setInvoiceModalOpen(false);
+            setInvoicingOrder(null);
+            await loadData();
+        } catch (error: unknown) {
+            toast.dismiss();
+            console.error("Błąd generowania dokumentu:", error);
 
-    if (
-      error instanceof AxiosError &&
-      error.response?.data instanceof Blob
-    ) {
-      try {
-        const text = await error.response.data.text();
-        const errorData = JSON.parse(text);
-        toast.error(errorData.detail || "Nie udało się wygenerować dokumentu");
-      } catch {
-        toast.error("Nie udało się wygenerować dokumentu");
-      }
-    } else if (
-      error instanceof AxiosError &&
-      error.response?.data?.detail
-    ) {
-      toast.error(error.response.data.detail);
-    } else {
-      toast.error("Nie udało się wygenerować dokumentu");
-    }
-  }
-};
+            if (
+                error instanceof AxiosError &&
+                error.response?.data instanceof Blob
+            ) {
+                try {
+                    const text = await error.response.data.text();
+                    const errorData = JSON.parse(text);
+                    toast.error(errorData.detail || "Nie udało się wygenerować dokumentu");
+                } catch {
+                    toast.error("Nie udało się wygenerować dokumentu");
+                }
+            } else if (
+                error instanceof AxiosError &&
+                error.response?.data?.detail
+            ) {
+                toast.error(error.response.data.detail);
+            } else {
+                toast.error("Nie udało się wygenerować dokumentu");
+            }
+        }
+    };
 
     return (
         <div>
@@ -445,10 +449,7 @@ const confirmInvoice = async () => {
                                             </button>
                                         )}
                                         <button
-                                            onClick={() => {
-                                                setEditingOrder(order);
-                                                setIsModalOpen(true);
-                                            }}
+                                            onClick={async () => handleOpenEditModal(order)}
                                             className="text-blue-600 hover:text-blue-900"
                                         >
                                             <Pencil className="h-5 w-5"/>
