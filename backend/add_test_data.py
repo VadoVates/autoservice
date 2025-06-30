@@ -2,6 +2,7 @@ from models.base import SessionLocal
 from models.customer import Customer
 from models.vehicle import Vehicle
 from models.work_station import WorkStation
+from models.part import Part
 
 db = SessionLocal()
 
@@ -47,6 +48,23 @@ try:
     db.commit()
     print(f"Dodano {len(vehicles)} pojazdów")
     
+    # Dodaj części
+    parts = [
+        Part(code="P001", name="Filtr oleju", description="Filtr oleju do silnika benzynowego", price=29.99, stock_quantity=50),
+        Part(code="P002", name="Klocki hamulcowe", description="Klocki hamulcowe przód", price=119.99, stock_quantity=30),
+        Part(code="P003", name="Świeca zapłonowa", description="Zestaw świec zapłonowych", price=15.50, stock_quantity=100),
+        Part(code="P004", name="Akumulator", description="Akumulator 12V 60Ah", price=350.00, stock_quantity=15),
+        Part(code="P005", name="Pasek rozrządu", description="Pasek rozrządu do silnika 1.6", price=89.99, stock_quantity=20),
+    ]
+
+    for part in parts:
+        existing = db.query(Part).filter(Part.code == part.code).first()
+        if not existing:
+            db.add(part)
+
+    db.commit()
+    print(f"Dodano {len(parts)} części")
+
 except Exception as e:
     print(f"Błąd: {e}")
     db.rollback()
