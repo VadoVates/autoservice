@@ -1,13 +1,12 @@
 import os
-from datetime import datetime, timezone, date, timedelta
+from datetime import datetime, timezone, date
 from typing import Optional
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException, Body
 
-from api.models import OrderCreate, OrderUpdate, OrderPartCreate
-from api.utils import get_object_or_404, serialize_order, serialize_part
+from api.models import OrderCreate, OrderUpdate, OrderPartCreate, OrderUpdatePartial, OrderRead
+from api.utils import get_object_or_404, serialize_order
 from models import OrderPart, Part
 from models.order import Order, OrderStatus
 from models.base import get_db
@@ -301,6 +300,19 @@ def update_order(order_id: int, db_order: OrderUpdate, db: Session = Depends(get
     db.commit()
     db.refresh(order)
     return serialize_order(order)
+
+@router.patch("/{order_id}", response_model=OrderRead)
+def patch_order(order_id: int, order_update: OrderUpdatePartial, db: Session = Depends(get_db)):
+    order = get_object_or_404(db, Order, order_id, "Order")
+
+    if order_update.status is not None:
+        order.status = order_update.status
+    if order_update.work_station_id is not None or order_update.work_station_id is None:
+        order.work_station_id = order_update.work_station_id
+
+    db.commit()
+    db.refresh(order)
+    return order
 
 @router.delete("/{order_id}")
 def delete_order(order_id: int, db: Session = Depends(get_db)):

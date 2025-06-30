@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, field_validator
+from models.order import OrderStatus
 
 
 class VehicleCreate(BaseModel):
@@ -56,3 +57,24 @@ class OrderPartCreate(BaseModel):
     part_id: int
     quantity: int
     unit_price: Optional[float] = None  # If None, use current part price
+
+class OrderUpdatePartial(BaseModel):
+    status: Optional[OrderStatus]
+    work_station_id: Optional[int]
+
+class OrderRead(BaseModel):
+    id: int
+    customer_id: int
+    vehicle_id: int
+    work_station_id: Optional[int]
+    description: str
+    priority: str
+    status: str
+    created_at: datetime
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    estimated_cost: float
+    final_cost: Optional[float]
+
+    class Config:
+        orm_mode = True

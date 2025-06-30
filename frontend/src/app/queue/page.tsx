@@ -6,6 +6,11 @@ import { ordersService } from "@/services/orders";
 import { Car, Clock, AlertTriangle, RefreshCw, Package } from "lucide-react";
 import toast from "react-hot-toast";
 
+type OrderUpdatePayload = {
+  work_station_id?: number | null;
+  status?: "new" | "in_progress" | "waiting_for_parts" | "completed";
+};
+
 export default function QueuePage() {
   const [queueData, setQueueData] = useState<QueueData>({
     station_1: [],
@@ -58,7 +63,7 @@ export default function QueuePage() {
     if (!draggedOrder) return;
 
     try {
-      const updates: any = {};
+      const updates: OrderUpdatePayload = {};
 
       if (targetType === "station" && targetStation) {
         updates.work_station_id = targetStation;
@@ -79,7 +84,7 @@ export default function QueuePage() {
         updates.status = "completed";
       }
 
-      await ordersService.update(draggedOrder.id, updates);
+      await ordersService.patch(draggedOrder.id, updates);
       toast.success("Zlecenie zostało przeniesione");
       await loadQueue();
     } catch (error) {
@@ -313,7 +318,7 @@ export default function QueuePage() {
           )}
         </div>
         <div className="mt-2 text-sm text-gray-600 text-center">
-          Uwaga: Zakończonym zleceniom należy wystawić fakturę na stronie "<a href="/orders">Zlecenia</a>"
+          Uwaga: Zakończonym zleceniom należy wystawić fakturę na stronie &quot;<a href="/orders">Zlecenia</a>&quot;
         </div>
       </div>
 
@@ -324,12 +329,12 @@ export default function QueuePage() {
         <ul className="text-sm text-gray-700 space-y-1">
           <li>• Przeciągnij zlecenie na stanowisko, aby rozpocząć pracę</li>
           <li>
-            • Przeciągnij zlecenie do "Czekające na części" gdy brakuje części
+            • Przeciągnij zlecenie do &quot;Czekające na części&quot; gdy brakuje części
           </li>
           <li>
-            • Przeciągnij z powrotem do "Oczekujące" aby anulować przypisanie
+            • Przeciągnij z powrotem do &quot;Oczekujące&quot; aby anulować przypisanie
           </li>
-          <li>• Przeciągnij do sekcji "Zakończone" po ukończeniu naprawy</li>
+          <li>• Przeciągnij do sekcji &quot;Zakończone&quot; po ukończeniu naprawy</li>
         </ul>
 
         <h4 className="font-semibold text-blue-900 mb-2 mt-4">

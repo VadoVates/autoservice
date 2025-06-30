@@ -294,7 +294,7 @@ export default function OrdersPage() {
     };
 
     const handleInvoice = async (order: Order) => {
-        if (order.status !== "completed") {
+        if (!(order.status === "completed" || order.status === "invoiced")) {
             toast.error("Można wystawić dokument tylko dla zakończonych zleceń");
             return;
         }
@@ -439,7 +439,7 @@ export default function OrdersPage() {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        {order.status === "completed" && (
+                                        {(order.status === "completed" || order.status === "invoiced")&& (
                                             <button
                                                 onClick={() => handleInvoice(order)}
                                                 className="text-green-600 hover:text-green-900"
