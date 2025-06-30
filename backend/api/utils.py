@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from models.customer import Customer
 from models.order import Order
 from models.vehicle import Vehicle
+from models.part import Part
 
 ACTIVE_STATUSES = ["new", "in_progress", "waiting_for_parts"]
 
@@ -54,6 +55,16 @@ def serialize_order(order: Order) -> dict:
             "final_cost": order.final_cost,
             "customer": serialize_customer(order.customer) if order.customer else None,
             "vehicle": serialize_vehicle(order.vehicle) if order.vehicle else None
+    }
+
+def serialize_part(part: Part, quantity_change: int) -> dict:
+    return {
+        "part_id": part.id,
+        "code": part.code,
+        "name": part.name,
+        "previous_stock": part.stock_quantity - quantity_change,
+        "change": quantity_change,
+        "new_stock": part.stock_quantity
     }
 
 def count_active_orders(db : Session, customer_id: Optional[int] = None):

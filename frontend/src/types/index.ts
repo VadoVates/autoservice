@@ -47,3 +47,26 @@ export interface QueueData {
   waiting_for_parts: Order[];
   completed?: Order[];
 }
+
+export interface Part {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  price: number;
+  stock_quantity: number;
+}
+
+export interface OrderPart {
+  id: number;
+  part: {
+    id: number;
+    code: string;
+    name: string;
+    current_price: number;
+    stock_quantity: number;
+  };
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}

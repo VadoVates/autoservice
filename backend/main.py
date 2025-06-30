@@ -6,8 +6,7 @@ from api.routes.dashboard import router as dashboard_router
 from api.routes.vehicles import router as vehicles_router
 from api.routes.orders import router as orders_router
 from api.routes.queue import router as queue_router
-
-from models.base import get_db
+from api.routes.parts import router as parts_router
 
 app = FastAPI(
     title="AutoService Manager API",
@@ -47,6 +46,7 @@ app.include_router(dashboard_router)
 app.include_router(vehicles_router)
 app.include_router(orders_router)
 app.include_router(queue_router)
+app.include_router(parts_router)
 
 @app.get("/")
 def read_root():

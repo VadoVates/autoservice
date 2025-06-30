@@ -5,8 +5,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends, HTTPException
 
-from api.models import OrderCreate, OrderUpdate
-from api.utils import get_object_or_404, serialize_order
+from api.models import OrderCreate, OrderUpdate, OrderPartCreate
+from api.utils import get_object_or_404, serialize_order, serialize_part
+from models import OrderPart, Part
 from models.order import Order, OrderStatus
 from models.base import get_db
 
@@ -45,7 +46,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
 def create_invoice(order_id: int, db: Session = Depends(get_db)):
     order = get_object_or_404(db, Order, order_id, "Order")
 
-    print("Order status:", order.status)
+    # print("Order status:", order.status)
 
     if order.status != OrderStatus.COMPLETED:
         raise HTTPException(
@@ -238,3 +239,113 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
     db.delete(order)
     db.commit()
     return {"message": "Order deleted successfully"}
+
+
+@router.post("/{order_id}/parts")
+def add_part_to_order(
+        order_id: int,
+        order_part: OrderPartCreate,
+        db: Session = Depends(get_db)
+):
+    # Verify order exists
+    order = get_object_or_404(db, Order, order_id, "Order")
+
+    # Verify part exists
+    part = get_object_or_404(db, Part, order_part.part_id, "Part")
+
+    # Check if we have enough stock
+    if part.stock_quantity < order_part.quantity:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Insufficient stock. Available: {part.stock_quantity}, Requested: {order_part.quantity}"
+        )
+
+    # Use provided price or current part price
+    unit_price = order_part.unit_price if order_part.unit_price is not None else part.price
+
+    # Create order-part relationship
+    db_order_part = OrderPart(
+        order_id=order_id,
+        part_id=order_part.part_id,
+        quantity=order_part.quantity,
+        unit_price=unit_price
+    )
+
+    # Update stock
+    part.stock_quantity -= order_part.quantity
+
+    db.add(db_order_part)
+    db.commit()
+    db.refresh(db_order_part)
+
+    return {
+        "id": db_order_part.id,
+        "order_id": db_order_part.order_id,
+        "part": {
+            "id": part.id,
+            "code": part.code,
+            "name": part.name,
+            "price": part.price
+        },
+        "quantity": db_order_part.quantity,
+        "unit_price": db_order_part.unit_price,
+        "total_price": db_order_part.quantity * db_order_part.unit_price
+    }
+
+@router.get("/{order_id}/parts")
+def get_order_parts(order_id: int, db: Session = Depends(get_db)):
+    # Verify order exists
+    order = get_object_or_404(db, Order, order_id, "Order")
+
+    order_parts = db.query(OrderPart).filter(OrderPart.order_id == order_id).all()
+
+    result = []
+    total_cost = 0
+
+    for op in order_parts:
+        part = op.part
+        item_total = op.quantity * op.unit_price
+        total_cost += item_total
+
+        result.append({
+            "id": op.id,
+            "part": {
+                "id": part.id,
+                "code": part.code,
+                "name": part.name,
+                "current_price": part.price,
+                "stock_quantity": part.stock_quantity
+            },
+            "quantity": op.quantity,
+            "unit_price": op.unit_price,
+            "total_price": item_total
+        })
+
+    return {
+        "order_id": order_id,
+        "parts": result,
+        "total_parts_cost": total_cost
+    }
+
+@router.delete("/{order_id}/parts/{order_part_id}")
+def remove_part_from_order(
+        order_id: int,
+        order_part_id: int,
+        db: Session = Depends(get_db)
+):
+    order_part = db.query(OrderPart).filter(
+        OrderPart.id == order_part_id,
+        OrderPart.order_id == order_id
+    ).first()
+
+    if not order_part:
+        raise HTTPException(status_code=404, detail="Order part not found")
+
+    # Return stock
+    part = order_part.part
+    part.stock_quantity += order_part.quantity
+
+    db.delete(order_part)
+    db.commit()
+
+    return {"message": "Part removed from order successfully"}

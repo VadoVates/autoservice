@@ -37,3 +37,22 @@ class OrderUpdate(BaseModel):
     work_station_id: Optional[int] = None
     estimated_cost: Optional[str] = None
     final_cost: Optional[str] = None
+
+class PartCreate(BaseModel):
+    code: str
+    name: str
+    description: Optional[str] = None
+    price: float
+    stock_quantity: int = 0
+
+class PartUpdate(BaseModel):
+    code: Optional[str] = None
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    stock_quantity: Optional[int] = None
+
+class OrderPartCreate(BaseModel):
+    part_id: int
+    quantity: int
+    unit_price: Optional[float] = None  # If None, use current part price
