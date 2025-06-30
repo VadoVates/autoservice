@@ -1,3 +1,6 @@
+include .env
+export
+
 .PHONY: help build up down logs shell clean rebuild dev-backend dev-frontend dev-db prod-build prod-up backup-db migrate migrate-down
 
 help:
@@ -12,8 +15,6 @@ help:
 	@echo "  make dev-backend - Wejdź do backendu (bash)"
 	@echo "  make dev-frontend- Wejdź do frontendu (sh)"
 	@echo "  make dev-db      - Wejdź do mysql (db)"
-	@echo "  make prod-build  - Build produkcyjny"
-	@echo "  make prod-up     - Up produkcyjny"
 	@echo "  make backup-db   - Dump bazy do pliku"
 	@echo "  make migrate     - Alembic upgrade"
 	@echo "  make migrate-down- Alembic downgrade -1"
@@ -46,19 +47,21 @@ dev-backend:
 dev-frontend:
 	docker compose exec frontend sh
 
+# Uwaga - pozwala "zajrzeć" do bazy, ale stawia nowy kontener z klientem MySQL
 dev-db:
-	docker compose exec db mysql -u autoservice_user -pSecurePassword123! autoservice_db
+	docker run -it --rm \
+		--network autoservice_autoservice_network \
+		-e MYSQL_PWD=$(MARIADB_PASSWORD) \
+		mysql:8 \
+		mysql -h mariadb -u $(MARIADB_USER) $(MARIADB_DATABASE)
 
-# Komendy produkcyjne
-prod-build:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml build
-
-prod-up:
-	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-# Backup bazy danych
+# Backup bazy danych, uwaga - pozwala "zapisać" dane z bazy, ale stawia nowy kontener z klientem MySQL
 backup-db:
-	docker compose exec db mysqldump -u root -p rootpassword123 autoservice_db > backup_$$(date +%Y%m%d_%H%M%S).sql
+	docker run --rm \
+		--network autoservice_autoservice_network \
+		-e MYSQL_PWD=$(MARIADB_PASSWORD) \
+		mysql:8 \
+		mysqldump --column-statistics=0 -h mariadb -u $(MARIADB_USER) $(MARIADB_DATABASE) > backup_$$(date +%Y%m%d_%H%M%S).sql
 
 # Migracje
 migrate:

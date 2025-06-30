@@ -153,7 +153,7 @@ Stworzenie kompleksowego systemu informatycznego wspomagającego zarządzanie wa
 
 ### 5.1 Instalacja wymaganych narzędzi
 
-#### Node.js i npm
+#### Docker
 
 **Linux (Debian/Ubuntu):**
 ```bash
